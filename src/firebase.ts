@@ -1,19 +1,29 @@
-import { initializeApp } from 'firebase/app';
+import { initializeApp, getApp, getApps } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore, initializeFirestore, doc, getDocFromCache, getDocFromServer } from 'firebase/firestore';
+
+// We use a static import for Vite. If you are not using the local config file, 
+// you can safely ignore any build warnings or errors related to this file missing 
+// if you have set the VITE_FIREBASE_* environment variables.
 import firebaseConfigFromJson from '../firebase-applet-config.json';
 
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || firebaseConfigFromJson.apiKey,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || firebaseConfigFromJson.authDomain,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || firebaseConfigFromJson.projectId,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || firebaseConfigFromJson.storageBucket,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || firebaseConfigFromJson.messagingSenderId,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || firebaseConfigFromJson.appId,
-  firestoreDatabaseId: import.meta.env.VITE_FIREBASE_DATABASE_ID || firebaseConfigFromJson.firestoreDatabaseId,
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || firebaseConfigFromJson?.apiKey,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || firebaseConfigFromJson?.authDomain,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || firebaseConfigFromJson?.projectId,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || firebaseConfigFromJson?.storageBucket,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || firebaseConfigFromJson?.messagingSenderId,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || firebaseConfigFromJson?.appId,
+  firestoreDatabaseId: import.meta.env.VITE_FIREBASE_DATABASE_ID || firebaseConfigFromJson?.firestoreDatabaseId,
 };
 
-const app = initializeApp(firebaseConfig);
+// Validate config before initializing
+if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
+  console.error("Firebase Configuration is missing! Please set your VITE_FIREBASE_* environment variables in Render.");
+  // Provide a dummy app or handle gracefully to avoid white screen
+}
+
+const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
 // Use initializeFirestore with long polling to bypass potential network restrictions
 export const db = initializeFirestore(app, {
