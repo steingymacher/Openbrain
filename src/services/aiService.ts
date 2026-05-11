@@ -1,7 +1,19 @@
 import { GoogleGenAI } from "@google/genai";
 import { Product, GreenhouseStatus, UserProfile } from "../types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+let genAI: GoogleGenAI | null = null;
+
+function getAI() {
+  if (!genAI) {
+    // Note: process.env.GEMINI_API_KEY is the preferred way in this environment
+    const apiKey = (process.env.GEMINI_API_KEY) || (import.meta as any).env.VITE_GEMINI_API_KEY;
+    if (!apiKey) {
+      throw new Error("GEMINI_API_KEY is not set.");
+    }
+    genAI = new GoogleGenAI({ apiKey });
+  }
+  return genAI;
+}
 
 export interface ChatMessage {
   role: 'user' | 'model';
@@ -102,6 +114,7 @@ export async function* getAIChatResponse(
   `;
 
   try {
+    const ai = getAI();
     const contents = [
       ...history.map(msg => ({
         role: msg.role === 'user' ? 'user' as const : 'model' as const,

@@ -8,10 +8,19 @@ import multer from "multer";
 import { v2 as cloudinary } from "cloudinary";
 import { initializeApp } from 'firebase/app';
 import { getFirestore, doc, getDoc, setDoc, collection, getDocs, query, orderBy, limit, serverTimestamp } from 'firebase/firestore';
-import firebaseConfig from './firebase-applet-config.json' with { type: 'json' };
 
+import fs from "fs";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// Load Firebase config safely
+let firebaseConfig: any = {};
+const configPath = path.join(__dirname, 'firebase-applet-config.json');
+if (fs.existsSync(configPath)) {
+  firebaseConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+} else {
+  console.warn("firebase-applet-config.json not found, using environment variables only.");
+}
 
 // Initialize Firebase for backend use
 const firebaseConfigModel = {

@@ -30,3 +30,5 @@ services:
         sync: false
       - key: VITE_FIREBASE_DATABASE_ID
         sync: false
+      - key: VITE_GEMINI_API_KEY
+        sync: false
