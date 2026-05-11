@@ -1,0 +1,52 @@
+{
+  "entities": {
+    "users": {
+      "title": "User Profile",
+      "description": "Stores user preferences and dietary profiles.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "hasCompletedTutorial": { "type": "boolean" },
+        "dietaryProfile": {
+          "type": "object",
+          "properties": {
+            "lactoseIntolerance": { "type": "boolean" },
+            "glutenIntolerance": { "type": "boolean" },
+            "vegan": { "type": "boolean" },
+            "vegetarian": { "type": "boolean" },
+            "nutAllergy": { "type": "boolean" },
+            "lowCalorie": { "type": "boolean" },
+            "highProtein": { "type": "boolean" }
+          }
+        }
+      },
+      "required": ["uid", "name", "email"]
+    },
+    "orders": {
+      "title": "Order History",
+      "description": "Stores completed checkout sessions.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "items": { "type": "array" },
+        "totalPrice": { "type": "number" },
+        "totalKcal": { "type": "number" },
+        "totalCo2": { "type": "number" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "items", "totalPrice", "timestamp"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "users",
+      "description": "User profile document"
+    },
+    "/orders/{orderId}": {
+      "schema": "orders",
+      "description": "Completed order document"
+    }
+  }
+}

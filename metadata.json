@@ -1,0 +1,7 @@
+{
+  "name": "EcoScan: Smart Supermarket",
+  "description": "Intelligent self-checkout with health, nutrition, and CO2 impact analysis. Featuring community marketplace and smart greenhouse monitoring.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}

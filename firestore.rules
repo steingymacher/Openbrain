@@ -1,0 +1,293 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 1. Global Safety Net: Default Deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    match /test/connection {
+      allow read: if true;
+    }
+
+    match /_connection_test_/test {
+      allow read: if true;
+    }
+
+    // --- 2. Primitives & Global Helpers ---
+    function isSignedIn() { 
+      return request.auth != null; 
+    }
+    
+    function isVerified() {
+      return isSignedIn(); 
+    }
+    
+    // Auth tokens never contain custom claims in this environment.
+    // We strictly check against the known admin email.
+    function isAdmin() { 
+      return isSignedIn() && 
+             (request.auth.token.get('email', '').lower() == 'mihail.cozirev2017@gmail.com' || 
+              request.auth.token.get('email', '').lower() == 'steingymacher@gmail.com' ||
+              request.auth.token.get('email', '').lower() == '1@mail.com'); 
+    }
+    
+    function isOwner(userId) { 
+      return isSignedIn() && request.auth.uid == userId; 
+    }
+    
+    function isValidId(id) { 
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); 
+    }
+    
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+
+    // --- 3. Validation Blueprints ---
+
+    function isValidUserProfile(data) {
+      return data.keys().hasAll(['uid', 'name', 'email', 'dietaryProfile', 'role', 'language']) &&
+             data.keys().size() >= 6 &&
+             data.keys().size() <= 10 &&
+             data.uid == request.auth.uid &&
+             data.name is string && data.name.size() <= 100 &&
+             data.email is string && data.email.size() <= 100 &&
+             data.dietaryProfile is map &&
+             data.role in ['user', 'admin', 'staff'] &&
+             data.language in ['de', 'en'];
+    }
+
+    function isValidMarketplaceOffer(data) {
+      return data.keys().hasAll(['userId', 'userName', 'title', 'description', 'price', 'category', 'status', 'createdAt', 'images', 'type']) &&
+             data.keys().size() >= 10 &&
+             data.keys().size() <= 13 &&
+             data.userId == request.auth.uid &&
+             data.userName is string && data.userName.size() <= 100 &&
+             data.title is string && data.title.size() <= 200 &&
+             data.description is string && data.description.size() <= 4000 &&
+             data.price is number && data.price >= 0 &&
+             data.type in ['product', 'service', 'announcement'] &&
+             (!('eventDate' in data) || data.eventDate == null || data.eventDate is string) &&
+             data.category is string &&
+             data.images is list && data.images.size() <= 10 &&
+             data.status in ['active', 'sold', 'reserved'] &&
+             (data.createdAt == request.time || data.createdAt is timestamp) &&
+             (!('updatedAt' in data) || data.updatedAt == request.time || data.updatedAt is timestamp);
+    }
+
+    function isValidOrder(data) {
+       return data.keys().hasAll(['userId', 'items', 'totalPrice', 'type', 'status', 'timestamp', 'serviceMode', 'co2Fee', 'totalKcal', 'totalCo2']) &&
+              data.keys().size() == 10 &&
+              data.userId == request.auth.uid &&
+              data.items is list && data.items.size() <= 50 &&
+              data.totalPrice is number &&
+              data.co2Fee is number &&
+              data.totalKcal is number &&
+              data.totalCo2 is number &&
+              data.type in ['online', 'instore'] &&
+              data.serviceMode in ['pickup', 'delivery', 'marketplace', 'staff_portal'] &&
+              data.status in ['pending', 'completed', 'cancelled'] &&
+              (data.timestamp == request.time || data.timestamp is timestamp);
+    }
+
+    function isValidChat(data) {
+      return data.keys().hasAll(['participants', 'buyerId', 'sellerId', 'offerId', 'offerTitle', 'lastMessage', 'lastMessageTimestamp', 'createdAt']) &&
+             data.keys().size() == 8 &&
+             data.participants is list && data.participants.size() == 2 &&
+             request.auth.uid in data.participants &&
+             (data.buyerId == request.auth.uid || data.sellerId == request.auth.uid) &&
+             data.offerId is string && data.offerTitle is string &&
+             data.lastMessage is string &&
+             (data.createdAt == request.time || data.createdAt is timestamp) &&
+             (data.lastMessageTimestamp == request.time || data.lastMessageTimestamp is timestamp);
+    }
+
+    function isValidMessage(data) {
+      return data.keys().hasAll(['senderId', 'text', 'timestamp']) &&
+             data.keys().size() == 3 &&
+             data.senderId == request.auth.uid &&
+             data.text is string && data.text.size() <= 2000 &&
+             (data.timestamp == request.time || data.timestamp is timestamp);
+    }
+    
+    function isValidGreenhouseTask(data) {
+      return data.keys().hasAll(['title', 'description', 'date', 'completed']) &&
+             data.keys().size() >= 4 &&
+             data.title is string && data.title.size() <= 200 &&
+             data.description is string && data.description.size() <= 2000 &&
+             data.completed is bool;
+    }
+    
+    function isValidShoppingList(data) {
+      return data.keys().hasAll(['userId', 'name', 'items', 'createdAt']) &&
+             data.keys().size() == 4 &&
+             data.userId == request.auth.uid &&
+             data.name is string && data.name.size() <= 100 &&
+             data.items is list &&
+             (data.createdAt == request.time || data.createdAt is timestamp);
+    }
+
+    function isValidGroup(data) {
+      return data.keys().hasAll(['name', 'ownerId', 'inviteCode', 'password', 'members', 'createdAt']) &&
+             data.keys().size() == 6 &&
+             data.name is string && data.name.size() <= 100 &&
+             data.ownerId == request.auth.uid &&
+             data.inviteCode is string &&
+             data.password is string && data.password.size() >= 4 &&
+             data.members is list &&
+             (data.createdAt == request.time || data.createdAt is timestamp);
+    }
+
+    function isValidPurchaseRequest(data) {
+      return data.keys().hasAll(['groupId', 'memberIds', 'requesterId', 'requesterName', 'productId', 'productName', 'status', 'approvals', 'rejections', 'createdAt']) &&
+             data.keys().size() == 10 &&
+             data.groupId is string &&
+             data.memberIds is list &&
+             data.requesterId == request.auth.uid &&
+             data.requesterName is string &&
+             data.productId is string &&
+             data.productName is string &&
+             data.status in ['pending', 'approved', 'rejected'] &&
+             data.approvals is list &&
+             data.rejections is list &&
+             (data.createdAt == request.time || data.createdAt is timestamp);
+    }
+
+    // --- 4. Collection Rules ---
+
+    // USERS
+    match /users/{userId} {
+      allow get: if isValidId(userId) && (isOwner(userId) || isAdmin());
+      allow list: if isAdmin();
+      allow create: if isOwner(userId) && isValidUserProfile(incoming());
+      allow update: if (isOwner(userId) || isAdmin()) && 
+                    isValidUserProfile(incoming()) &&
+                    incoming().uid == existing().uid &&
+                    incoming().email == existing().email &&
+                    (isAdmin() || incoming().role == existing().role);
+    }
+
+    // PRODUCTS
+    match /products/{productId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /product_prices/{barcode} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // ORDERS
+    match /orders/{orderId} {
+      allow get: if isValidId(orderId) && (isOwner(existing().userId) || isAdmin());
+      allow list: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isVerified() && isValidOrder(incoming());
+      allow update, delete: if isAdmin();
+    }
+
+    // SHOPPING LISTS
+    match /shopping_lists/{listId} {
+      allow get: if isValidId(listId) && (isOwner(existing().userId) || isAdmin());
+      allow list: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isVerified() && isValidShoppingList(incoming());
+      allow update: if (isOwner(existing().userId) || isAdmin()) && isValidShoppingList(incoming());
+      allow delete: if isValidId(listId) && (isOwner(existing().userId) || isAdmin());
+    }
+
+    // MARKETPLACE
+    match /marketplace_offers/{offerId} {
+      allow list: if true;
+      allow get: if isValidId(offerId);
+      allow create: if isVerified() && isValidMarketplaceOffer(incoming());
+      allow update: if (isOwner(existing().userId) || isAdmin()) && 
+                    isValidMarketplaceOffer(incoming()) &&
+                    incoming().userId == existing().userId &&
+                    incoming().createdAt == existing().createdAt;
+      allow delete: if isValidId(offerId) && (isOwner(existing().userId) || isAdmin());
+    }
+
+    // CHATS & MESSAGES
+    match /chats/{chatId} {
+      allow get: if isValidId(chatId) && (request.auth.uid in existing().participants || isAdmin());
+      allow list: if isSignedIn() && (request.auth.uid in resource.data.participants || isAdmin());
+      allow create: if isVerified() && isValidChat(incoming());
+      allow update: if (request.auth.uid in existing().participants || isAdmin()) &&
+                    isValidChat(incoming()) &&
+                    incoming().participants == existing().participants &&
+                    incoming().createdAt == existing().createdAt;
+      allow delete: if isAdmin();
+
+      match /messages/{messageId} {
+        allow read: if isSignedIn() && (request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants || isAdmin());
+        allow create: if isVerified() && (request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants) && isValidMessage(incoming());
+      }
+    }
+
+    // GREENHOUSE
+    match /greenhouse_tasks/{taskId} {
+      allow read: if isSignedIn();
+      allow create: if isAdmin() && isValidGreenhouseTask(incoming());
+      allow update: if isSignedIn() && (
+        isAdmin() || 
+        (incoming().diff(existing()).affectedKeys().hasOnly(['assignedTo', 'assignedName'])) ||
+        (existing().assignedTo == request.auth.uid && incoming().diff(existing()).affectedKeys().hasOnly(['completed']))
+      );
+      allow delete: if isAdmin();
+    }
+
+    match /greenhouse_status/current {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    match /plant_records/{recordId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // GROUPS
+    match /groups/{groupId} {
+      allow create: if isVerified() && isValidGroup(incoming());
+      allow get: if isValidId(groupId) && (request.auth.uid in existing().members || isAdmin());
+      allow list: if isSignedIn() && (request.auth.uid in resource.data.members || isAdmin());
+      allow update: if isVerified() && (
+        // ALLOW JOINING: if adding self to members
+        (incoming().diff(existing()).affectedKeys().hasOnly(['members']) && 
+         incoming().members.size() == existing().members.size() + 1 && 
+         incoming().members.hasAll(existing().members) && 
+         request.auth.uid in incoming().members) ||
+        // ALLOW LEAVING: if removing self from members
+        (incoming().diff(existing()).affectedKeys().hasOnly(['members']) && 
+         incoming().members.size() == existing().members.size() - 1 && 
+         existing().members.hasAll(incoming().members) && 
+         !(request.auth.uid in incoming().members)) ||
+        // ALLOW OWNER FULL UPDATE
+        (existing().ownerId == request.auth.uid && isValidGroup(incoming()))
+      );
+      allow delete: if isAdmin() || (isSignedIn() && existing().ownerId == request.auth.uid);
+    }
+
+    // PURCHASE REQUESTS
+    match /purchase_requests/{requestId} {
+      allow create: if isVerified() && isValidPurchaseRequest(incoming()) && 
+                    request.auth.uid in incoming().memberIds;
+      allow get: if isValidId(requestId) && (request.auth.uid in existing().memberIds || isAdmin());
+      allow list: if isSignedIn() && (request.auth.uid in resource.data.memberIds || isAdmin());
+      allow update: if isVerified() && 
+                    request.auth.uid in existing().memberIds &&
+                    (incoming().diff(existing()).affectedKeys().hasOnly(['approvals', 'rejections', 'status']));
+      allow delete: if isAdmin() || 
+                    (isSignedIn() && request.auth.uid in existing().memberIds);
+    }
+
+    // INVITE CODES
+    match /invite_codes/{code} {
+      allow get: if isSignedIn();
+      allow list: if isAdmin();
+      allow create: if isSignedIn();
+      allow update, delete: if isAdmin() || (isSignedIn() && get(/databases/$(database)/documents/groups/$(existing().groupId)).data.ownerId == request.auth.uid);
+    }
+  }
+}

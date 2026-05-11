@@ -1,0 +1,283 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "User Profile",
+      "description": "User preferences and dietary profile",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "role": { "type": "string", "enum": ["user", "admin", "staff"] },
+        "language": { "type": "string", "enum": ["de", "en"] },
+        "totalCo2Saved": { "type": "number" },
+        "dietaryProfile": {
+          "type": "object",
+          "properties": {
+            "lactoseIntolerance": { "type": "boolean" },
+            "glutenIntolerance": { "type": "boolean" },
+            "nutAllergy": { "type": "boolean" },
+            "vegan": { "type": "boolean" },
+            "vegetarian": { "type": "boolean" },
+            "lowCalorie": { "type": "boolean" },
+            "highProtein": { "type": "boolean" },
+            "co2Conscious": { "type": "boolean" }
+          }
+        }
+      },
+      "required": ["uid", "name", "email", "role", "language"]
+    },
+    "ProductPrice": {
+      "title": "Product Price",
+      "description": "Stored price for a specific barcode",
+      "type": "object",
+      "properties": {
+        "barcode": { "type": "string" },
+        "price": { "type": "number" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["barcode", "price"]
+    },
+    "GreenhouseStatus": {
+      "title": "Greenhouse Status",
+      "description": "Real-time sensor data from the greenhouse",
+      "type": "object",
+      "properties": {
+        "temperature": { "type": "number" },
+        "humidity": { "type": "number" },
+        "lastUpdated": { "type": "string", "format": "date-time" },
+        "cameraUrl": { "type": "string" }
+      }
+    },
+    "PlantRecord": {
+      "title": "Plant Record",
+      "description": "Log of plants grown in the greenhouse",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "variety": { "type": "string" },
+        "plantedAt": { "type": "string", "format": "date-time" },
+        "expectedHarvestAt": { "type": "string", "format": "date-time" },
+        "harvestedAt": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["growing", "harvested", "failed"] },
+        "notes": { "type": "string" }
+      }
+    },
+    "Product": {
+      "title": "Product",
+      "description": "Full product data including image and nutritional info",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "brand": { "type": "string" },
+        "image": { "type": "string" },
+        "price": { "type": "number" },
+        "category": { "type": "string" },
+        "subCategory": { "type": "string" },
+        "co2": { "type": "number" },
+        "kcal": { "type": "number" },
+        "proteins": { "type": "number" },
+        "carbs": { "type": "number" },
+        "fat": { "type": "number" },
+        "sugar": { "type": "number" },
+        "ingredients": { "type": "array", "items": { "type": "string" } },
+        "allergens": { "type": "array", "items": { "type": "string" } },
+        "description": { "type": "string" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "name", "brand", "image", "price", "category"]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "Customer order record",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "items": { "type": "array" },
+        "totalPrice": { "type": "number" },
+        "type": { "type": "string", "enum": ["online", "instore"] },
+        "serviceMode": { "type": "string", "enum": ["pickup", "delivery"] },
+        "status": { "type": "string", "enum": ["pending", "completed", "cancelled"] },
+        "timestamp": { "type": "string", "format": "date-time" }
+      }
+    },
+    "MarketplaceOffer": {
+      "title": "Marketplace Offer",
+      "description": "Notice board entry for products, services, announcements or news",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "price": { "type": "number" },
+        "category": { "type": "string" },
+        "type": { "type": "string", "enum": ["product", "service", "announcement"] },
+        "eventDate": { "type": "string" },
+        "images": { "type": "array", "items": { "type": "string" } },
+        "status": { "type": "string", "enum": ["active", "sold", "reserved"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "title", "category", "type"]
+    },
+    "Chat": {
+      "title": "Chat",
+      "description": "A conversation between a buyer and a seller",
+      "type": "object",
+      "properties": {
+        "participants": { "type": "array", "items": { "type": "string" } },
+        "lastMessage": { "type": "string" },
+        "lastMessageTimestamp": { "type": "string", "format": "date-time" },
+        "offerId": { "type": "string" },
+        "offerTitle": { "type": "string" },
+        "sellerId": { "type": "string" },
+        "buyerId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["participants", "offerId", "sellerId", "buyerId", "createdAt"]
+    },
+    "GreenhouseTask": {
+      "title": "Greenhouse Task",
+      "description": "Task for greenhouse maintenance",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "date": { "type": "string", "format": "date-time" },
+        "completed": { "type": "boolean" },
+        "assignedTo": { "type": "string" },
+        "assignedName": { "type": "string" }
+      },
+      "required": ["title", "description", "date", "completed"]
+    },
+    "ShoppingList": {
+      "title": "Shopping List",
+      "description": "Saved shopping list for a user",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "name": { "type": "string" },
+        "items": { "type": "array" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "name", "items", "createdAt"]
+    },
+    "Message": {
+      "title": "Message",
+      "description": "A single message in a chat",
+      "type": "object",
+      "properties": {
+        "senderId": { "type": "string" },
+        "text": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["senderId", "text", "timestamp"]
+    },
+    "Group": {
+      "title": "Group",
+      "description": "A group of users who can collaborate on purchases",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "inviteCode": { "type": "string" },
+        "password": { "type": "string" },
+        "members": { "type": "array", "items": { "type": "string" } },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "ownerId", "inviteCode", "members", "createdAt"]
+    },
+    "InviteCode": {
+      "title": "Invite Code",
+      "description": "Quick lookup for group access via code",
+      "type": "object",
+      "properties": {
+        "groupId": { "type": "string" },
+        "password": { "type": "string" }
+      },
+      "required": ["groupId", "password"]
+    },
+    "PurchaseRequest": {
+      "title": "Purchase Request",
+      "description": "A request to the group to buy a specific product",
+      "type": "object",
+      "properties": {
+        "groupId": { "type": "string" },
+        "memberIds": { "type": "array", "items": { "type": "string" } },
+        "requesterId": { "type": "string" },
+        "requesterName": { "type": "string" },
+        "productId": { "type": "string" },
+        "productName": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+        "approvals": { "type": "array", "items": { "type": "string" } },
+        "rejections": { "type": "array", "items": { "type": "string" } },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["groupId", "memberIds", "requesterId", "productId", "status", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "User profile documents"
+    },
+    "/product_prices/{barcode}": {
+      "schema": "ProductPrice",
+      "description": "Central repository for product prices"
+    },
+    "/products/{productId}": {
+      "schema": "Product",
+      "description": "Full product database"
+    },
+    "/greenhouse_status/current": {
+      "schema": "GreenhouseStatus",
+      "description": "Current status of the greenhouse"
+    },
+    "/plant_records/{recordId}": {
+      "schema": "PlantRecord",
+      "description": "History of plants grown"
+    },
+    "/orders/{orderId}": {
+      "schema": "Order",
+      "description": "Customer order history"
+    },
+    "/marketplace_offers/{offerId}": {
+      "schema": "MarketplaceOffer",
+      "description": "User-generated marketplace listings"
+    },
+    "/chats/{chatId}": {
+      "schema": "Chat",
+      "description": "Top-level chat metadata"
+    },
+    "/chats/{chatId}/messages/{messageId}": {
+      "schema": "Message",
+      "description": "Messages within a conversation"
+    },
+    "/greenhouse_tasks/{taskId}": {
+      "schema": "GreenhouseTask",
+      "description": "Maintenance tasks for the greenhouse"
+    },
+    "/shopping_lists/{listId}": {
+      "schema": "ShoppingList",
+      "description": "User saved shopping lists"
+    },
+    "/groups/{groupId}": {
+      "schema": "Group",
+      "description": "Collaborative groups"
+    },
+    "/invite_codes/{code}": {
+      "schema": "InviteCode",
+      "description": "Quick lookup for joining groups"
+    },
+    "/purchase_requests/{requestId}": {
+      "schema": "PurchaseRequest",
+      "description": "Requests for group purchases"
+    },
+    "/test/connection": {
+      "schema": "object",
+      "description": "Connection test document"
+    }
+  }
+}
