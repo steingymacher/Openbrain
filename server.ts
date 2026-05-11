@@ -73,6 +73,94 @@ async function startServer() {
 
   app.use(express.json());
 
+  // Gemini AI Setup
+  const { GoogleGenerativeAI } = await import("@google/generative-ai");
+  let genAI: any = null;
+  function getAI() {
+    if (!genAI) {
+      const key = process.env.GEMINI_API_KEY;
+      if (!key) {
+        console.warn("GEMINI_API_KEY missing on server");
+        return null;
+      }
+      genAI = new GoogleGenerativeAI(key);
+    }
+    return genAI;
+  }
+
+  // Proxy route for AI Chat
+  app.post("/api/ai/chat", async (req, res) => {
+    try {
+      const { prompt, history, systemInstruction } = req.body;
+      const ai = getAI();
+      if (!ai) return res.status(500).json({ error: "AI not configured on server" });
+
+      const model = ai.getGenerativeModel({
+        model: "gemini-1.5-flash",
+        systemInstruction,
+      });
+
+      const contents = [
+        ...history.map((msg: any) => ({
+          role: msg.role === 'user' ? 'user' : 'model',
+          parts: [{ text: msg.text }]
+        })),
+        {
+          role: 'user',
+          parts: [{ text: prompt }]
+        }
+      ];
+
+      const result = await model.generateContentStream({
+        contents,
+        generationConfig: {
+          temperature: 0.7,
+          topP: 0.8,
+          topK: 40,
+        },
+      });
+
+      // Set headers for streaming
+      res.setHeader('Content-Type', 'text/plain');
+      res.setHeader('Transfer-Encoding', 'chunked');
+
+      for await (const chunk of result.stream) {
+        const text = chunk.text();
+        if (text) {
+          res.write(text);
+        }
+      }
+      res.end();
+    } catch (error: any) {
+      console.error('AI Proxy Error:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Proxy route for AI Image Search
+  app.post("/api/ai/image-search", async (req, res) => {
+    try {
+      const { prompt } = req.body;
+      const ai = getAI();
+      if (!ai) return res.status(500).json({ error: "AI not configured on server" });
+
+      const model = ai.getGenerativeModel({ model: "gemini-1.5-flash" });
+      const result = await model.generateContent({
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+        tools: [{ googleSearch: {} } as any]
+      });
+
+      const response = result.response;
+      const text = response.text();
+      const groundingUrl = response.candidates?.[0]?.groundingMetadata?.groundingChunks?.[0]?.web?.uri;
+
+      res.json({ text, groundingUrl });
+    } catch (error: any) {
+      console.error('AI Image Search Error:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Health check
   app.get("/api/health", (req, res) => {
     res.json({ status: "ok", time: new Date().toISOString() });

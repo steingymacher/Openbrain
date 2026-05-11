@@ -1,15 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Product, GreenhouseStatus, UserProfile } from "../types";
-import { GoogleGenAI } from "@google/genai";
 
 export interface ChatMessage {
   role: 'user' | 'model';
   text: string;
   recipeData?: any;
 }
-
-// Initialize AI on the client as per skill guidelines
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 export async function* getAIChatResponse(
   prompt: string, 
@@ -48,43 +44,41 @@ export async function* getAIChatResponse(
   `;
 
   try {
-    const stream = await ai.models.generateContentStream({
-      model: "gemini-3-flash-preview",
-      contents: [
-        ...history.map(m => ({ role: m.role, parts: [{ text: m.text }] })),
-        { role: 'user', parts: [{ text: prompt }] }
-      ],
-      config: {
-        systemInstruction,
-        temperature: 0.7,
-      }
+    const response = await fetch('/api/ai/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt, history, systemInstruction })
     });
 
-    for await (const chunk of stream) {
-      if (chunk.text) yield chunk.text;
+    if (!response.ok) throw new Error("Fehler beim Abrufen der KI-Antwort.");
+
+    const reader = response.body?.getReader();
+    if (!reader) return;
+
+    const decoder = new TextDecoder();
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      yield decoder.decode(value);
     }
   } catch (error) {
-    console.error("AI Error:", error);
+    console.error("AI Proxy Error:", error);
     yield "Entschuldigung, der KI-Dienst ist gerade nicht erreichbar.";
   }
 }
 
 export async function getAIImageSearch(prompt: string) {
   try {
-    const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
-      contents: prompt,
-      config: {
-        tools: [{ googleSearch: {} } as any]
-      }
+    const response = await fetch('/api/ai/image-search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt })
     });
 
-    const text = response.text || "";
-    const groundingUrl = (response as any).candidates?.[0]?.groundingMetadata?.groundingChunks?.[0]?.web?.uri;
-    
-    return { text, groundingUrl };
+    if (!response.ok) throw new Error("AI search failed");
+    return await response.json();
   } catch (err) {
-    console.error("AI image search error:", err);
+    console.error("AI image search proxy error:", err);
     return null;
   }
 }
