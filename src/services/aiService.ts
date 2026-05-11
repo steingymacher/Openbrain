@@ -1,9 +1,24 @@
 import { Product, GreenhouseStatus, UserProfile } from "../types";
+import { GoogleGenAI } from "@google/genai";
 
 export interface ChatMessage {
   role: 'user' | 'model';
   text: string;
   recipeData?: any;
+}
+
+// Lazy initialization of AI
+let aiInstance: GoogleGenAI | null = null;
+function getAI() {
+  if (!aiInstance) {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      console.warn("GEMINI_API_KEY is not set.");
+      return null;
+    }
+    aiInstance = new GoogleGenAI({ apiKey });
+  }
+  return aiInstance;
 }
 
 export async function* getAIChatResponse(
@@ -38,88 +53,77 @@ export async function* getAIChatResponse(
     DER FOOD-CONNECT-MARKT (Wissen):
     - Fokus: Gemeinschaft, Nachhaltigkeit, einfache Orientierung.
     - Barrierefreiheit: Rollstuhlgerecht, Riffelungen für Blinde, breite Gänge.
-    - Ladenlayout (Achteckige Form):
-      - In der Mitte: Blumenstation, Müsli-Bar, Wein-Bar, Frisch gepresste Säfte.
-      - Oben (Norden): Tiefkühlkost.
-      - Oben-Links (Nordwest): Nudeln & Reis.
-      - Oben-Rechts (Nordost): Obst & Gemüse.
-      - Mitte-Links (West): Infomaterial.
-      - Mitte-Rechts (Ost): Getränke.
-      - Unten-Rechts (Südost): Hygieneartikel.
-      - Unten (Süden): Eingang & Kassenbereich.
-      - Unten-Links (Südwest, extern): Café & Spielecke (Working Space).
-    - Farbzonen:
-      - Obst & Gemüse → hellgrün
-      - Backwaren → gelb
-      - Kühlprodukte → blau
-      - Snacks → rot
-      - Getränke → grau
-      - Vegane Produkte → hellgelb
-      - Glutenfreie Produkte → dunkelgelb
-    - Technik & Funktionen:
-      - Produkte direkt scannen (über Förderbänder transportiert).
-      - Automatische Sortierung an der Kasse (Sortierroboter).
-      - Café mit Spielecke, Working-Space und Kinderbetreuung.
-      - Gewächshaus (Hydroponik): Spart 90% Wasser, regionaler Anbau vor Ort.
-      - Community: Freiwillige Mitarbeit im Gewächshaus möglich, Workshops, Spenden an soziale Einrichtungen.
+    - Ladenlayout (Achteckige Form).
+    - Farben-Zonen: Obst&Gemüse (grün), Backwaren (gelb), Kühl (blau), Snacks (rot), Getränke (grau).
 
     DEINE AUFGABEN:
-    1. Hilfe beim Finden von Produkten (gebe klare Wege und Farben an).
+    1. Hilfe beim Finden von Produkten.
     2. Fragen zum Markt, Café und Gewächshaus beantworten.
-    3. Nachhaltigkeit & Hydroponik erklären (Wasserersparnis, Regionalität).
+    3. Nachhaltigkeit & Hydroponik erklären.
     4. Barrierefreie Unterstützung anbieten.
-    5. Eine positive und soziale Atmosphäre fördern.
 
     VERHALTENSREGELN:
     - Kurze bis mittellange Antworten.
     - Einfache Sprache, positiv und modern.
-    - WICHTIG: Nutze KEINERLEI Markdown-Formatierung wie Sternchen (**) für Fettschrift oder Rauten (##) für Überschriften. Antworte in sauberem Reintext.
-    - WICHTIG: Gib NIEMALS technische Variablen wie "context.user..." aus.
-    - Sei menschlich, nicht rein technisch oder kalt.
-    - Wenn Produkte nicht im Sortiment sind, schlage Alternativen vor.
-
-    VERFÜGBARE PRODUKTE (AUSZUG):
-    ${context.products.slice(0, 50).map(p => `- ${p.name} (Marke: ${p.brand}, ID: ${p.id}): ${p.price}€, ${p.co2}kg CO2, Bestand: ${p.stock} Stk.`).join('\n')}
-
-    REZEPT- & LISTEN-ANFRAGEN:
-    Wenn der Nutzer nach einer Liste oder einem Rezept fragt:
-    1. Antworte normal und freundlich.
-    2. Liste die Produkte im Text auf.
-    3. Füge als ALLERLETZTE ZEILE deiner Antwort diesen Block ein, OHNE ERLÄUTERUNG davor (keine Leerzeichen, kein Zeilenumbruch danach):
-    [DATA:{"type": "shopping_list", "name": "Name der Liste", "items": [{"id": "id_oder_unknown", "name": "Produktname", "amount": "Anzahl"}]}]
+    - WICHTIG: Nutze KEINERLEI Markdown-Formatierung wie Sternchen (**) für Fettschrift. Antworte in sauberem Reintext.
     
-    WICHTIG: Erzeuge EXAKT dieses JSON Format. Der Block muss mit [DATA: beginnen und mit ] enden. Keine Markdown-Code-Bloecke. Keine Zeichen nach dem schließenden ].
-    Format zum Warenkorb speichern: [DATA:{"type": "save_current_cart"}]
+    VERFÜGBARE PRODUKTE:
+    ${context.products.slice(0, 30).map(p => `- ${p.name} (${p.brand}): ${p.price}€`).join('\n')}
 
-    VERHALTENSREGELS UPDATE:
-    - Nutze Markdown NUR für Listen (- Zutat) oder einfache Struktur. Keine Sternchen (**) für Fett.
-    - Antworte immer auf Deutsch.
-    - Wenn du eine Liste erstellst, versuche so viele IDs aus der Produktliste wie möglich zu finden.
-    - Nutze das Ladenlayout aktiv für Wegbeschreibungen (z.B. "Vom Eingang aus gehst du nach Norden...").
+    LISTEN-FORMAT:
+    [DATA:{"type": "shopping_list", "name": "Name", "items": [{"id": "id", "name": "Name", "amount": "1"}]}]
+    Warenkorb speichern: [DATA:{"type": "save_current_cart"}]
   `;
 
+  const ai = getAI();
+  if (!ai) {
+    yield "Entschuldigung, die KI ist momentant nicht konfiguriert.";
+    return;
+  }
+
   try {
-    const response = await fetch('/api/ai/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt, history, systemInstruction })
+    const stream = await ai.models.generateContentStream({
+      model: "gemini-3-flash-preview", // Correct model from skill
+      contents: [
+        ...history.map(m => ({ role: m.role, parts: [{ text: m.text }] })),
+        { role: 'user', parts: [{ text: prompt }] }
+      ],
+      config: {
+        systemInstruction,
+        temperature: 0.7,
+      }
     });
 
-    if (!response.ok) {
-      throw new Error("Fehler beim Abrufen der KI-Antwort.");
+    for await (const chunk of stream) {
+      const text = chunk.text;
+      if (text) yield text;
     }
+  } catch (err: any) {
+    console.error("AI stream error:", err);
+    yield "Fehler bei der Kommunikation mit der KI.";
+  }
+}
 
-    const reader = response.body?.getReader();
-    if (!reader) return;
+export async function getAIImageSearch(prompt: string) {
+  const ai = getAI();
+  if (!ai) return null;
 
-    const decoder = new TextDecoder();
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      yield decoder.decode(value);
-    }
-  } catch (error) {
-    console.error("AI Service Error:", error);
-    yield "Entschuldigung, ich habe gerade technische Schwierigkeiten meine Gedanken zu ordnen. Bitte versuche es gleich noch einmal.";
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-3-flash-preview", // Correct model from skill
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      config: {
+        tools: [{ googleSearch: {} } as any]
+      }
+    });
+
+    const text = response.text || "";
+    // Note: groundingMetadata structure might vary, but this is a common pattern
+    const groundingUrl = (response as any).candidates?.[0]?.groundingMetadata?.groundingChunks?.[0]?.web?.uri;
+    
+    return { text, groundingUrl };
+  } catch (err) {
+    console.error("AI image search error:", err);
+    return null;
   }
 }

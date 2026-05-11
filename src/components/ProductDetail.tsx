@@ -6,7 +6,7 @@ import { X, CheckCircle2, AlertCircle, Leaf, Zap, Droplets, Cookie, Edit2, Save,
 import { cn } from '../lib/utils';
 import { db, auth } from '../firebase';
 import { doc, updateDoc, serverTimestamp, deleteDoc, setDoc, collection, query, where, getDocs, addDoc } from 'firebase/firestore';
-import { GoogleGenAI } from "@google/genai";
+import { getAIImageSearch } from '../services/aiService';
 import { useTranslation } from '../lib/LanguageContext';
 import { handleFirestoreError, OperationType } from '../lib/firestore-errors';
 
@@ -123,15 +123,10 @@ export default function ProductDetail({ product, serviceMode, userProfile, onAdd
     try {
       const promptText = `Find a high-quality product image URL for: ${editedProduct.name} ${editedProduct.brand}. White background. Return ONLY direct URL.`;
       
-      const response = await fetch('/api/ai/image-search', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: promptText })
-      });
+      const result = await getAIImageSearch(promptText);
 
-      if (!response.ok) throw new Error("AI search failed");
+      if (!result) throw new Error("AI search failed");
       
-      const result = await response.json();
       const text = result.text || "";
       const urlMatch = text.match(/https?:\/\/[^\s"']+/);
       const groundingUrl = result.groundingUrl;

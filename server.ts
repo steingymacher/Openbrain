@@ -18,11 +18,9 @@ let firebaseConfig: any = {};
 const configPath = path.join(__dirname, 'firebase-applet-config.json');
 if (fs.existsSync(configPath)) {
   firebaseConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-} else {
-  console.warn("firebase-applet-config.json not found, using environment variables only.");
 }
 
-// Initialize Firebase for backend use
+// Initialize Firebase for backend use (Arduino monitoring)
 const firebaseConfigModel = {
   apiKey: process.env.VITE_FIREBASE_API_KEY || firebaseConfig.apiKey,
   authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN || firebaseConfig.authDomain,
@@ -37,140 +35,31 @@ const firebaseApp = initializeApp(firebaseConfigModel);
 const db = getFirestore(firebaseApp, firebaseConfigModel.firestoreDatabaseId);
 
 // Cloudinary Configuration
-const cloudinaryCloudName = process.env.CLOUDINARY_CLOUD_NAME;
-const cloudinaryApiKey = process.env.CLOUDINARY_API_KEY;
-const cloudinaryApiSecret = process.env.CLOUDINARY_API_SECRET;
-
-console.log(`Initialising Cloudinary with Cloud Name: ${cloudinaryCloudName || 'missing'}, API Key: ${cloudinaryApiKey ? 'present' : 'missing'}, API Secret: ${cloudinaryApiSecret ? 'present' : 'missing'}`);
-
 cloudinary.config({
-  cloud_name: cloudinaryCloudName,
-  api_key: cloudinaryApiKey,
-  api_secret: cloudinaryApiSecret,
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
 const storage = multer.memoryStorage();
 const upload = multer({ 
   storage,
-  limits: {
-    fileSize: 5 * 1024 * 1024 // 5MB limit
-  }
+  limits: { fileSize: 5 * 1024 * 1024 }
 });
 
-// Configure axios with retries
-const client = axios.create({
-  timeout: 20000,
-});
-
+// Configure axios for OpenFoodFacts proxy
+const client = axios.create({ timeout: 20000 });
 axiosRetry(client, { 
-  retries: 4, 
-  retryDelay: (retryCount) => {
-    console.log(`Backend retry attempt ${retryCount}...`);
-    return retryCount * 2000; // Linear backoff: 2s, 4s, 6s, 8s
-  },
-  retryCondition: (error) => {
-    // Retry on network errors, timeouts, or 5xx responses
-    return axiosRetry.isNetworkOrIdempotentRequestError(error) || 
-           error.code === 'ECONNABORTED' || 
-           error.code === 'ECONNRESET' ||
-           (error.response?.status || 0) >= 500;
-  }
+  retries: 3, 
+  retryDelay: (retryCount) => retryCount * 2000,
+  retryCondition: (error) => axiosRetry.isNetworkOrIdempotentRequestError(error) || (error.response?.status || 0) >= 500
 });
-
-import { GoogleGenAI } from "@google/genai";
-
-// Initialize AI
-let genAI: GoogleGenAI | null = null;
-function getAI() {
-  if (!genAI) {
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      console.warn("GEMINI_API_KEY not set on server");
-      return null;
-    }
-    genAI = new GoogleGenAI(apiKey);
-  }
-  return genAI;
-}
 
 async function startServer() {
   const app = express();
-  const PORT = process.env.PORT || 3000;
+  const PORT = Number(process.env.PORT || 3000);
 
   app.use(express.json());
-
-  // Proxy route for AI Chat
-  app.post("/api/ai/chat", async (req, res) => {
-    try {
-      const { prompt, history, systemInstruction } = req.body;
-      const ai = getAI();
-      if (!ai) return res.status(500).json({ error: "AI not configured on server" });
-
-      const model = ai.getGenerativeModel({
-        model: "gemini-1.5-flash",
-        systemInstruction,
-      });
-
-      const contents = [
-        ...history.map((msg: any) => ({
-          role: msg.role === 'user' ? 'user' : 'model',
-          parts: [{ text: msg.text }]
-        })),
-        {
-          role: 'user',
-          parts: [{ text: prompt }]
-        }
-      ];
-
-      const result = await model.generateContentStream({
-        contents,
-        generationConfig: {
-          temperature: 0.7,
-          topP: 0.8,
-          topK: 40,
-        },
-      });
-
-      // Set headers for streaming
-      res.setHeader('Content-Type', 'text/plain');
-      res.setHeader('Transfer-Encoding', 'chunked');
-
-      for await (const chunk of result.stream) {
-        const text = chunk.text();
-        if (text) {
-          res.write(text);
-        }
-      }
-      res.end();
-    } catch (error: any) {
-      console.error('AI Proxy Error:', error);
-      res.status(500).json({ error: error.message });
-    }
-  });
-
-  // Proxy route for AI Image Search
-  app.post("/api/ai/image-search", async (req, res) => {
-    try {
-      const { prompt } = req.body;
-      const ai = getAI();
-      if (!ai) return res.status(500).json({ error: "AI not configured on server" });
-
-      const model = ai.getGenerativeModel({ model: "gemini-1.5-flash" });
-      const result = await model.generateContent({
-        contents: [{ role: "user", parts: [{ text: prompt }] }],
-        tools: [{ googleSearch: {} } as any]
-      });
-
-      const response = result.response;
-      const text = response.text();
-      const groundingUrl = response.candidates?.[0]?.groundingMetadata?.groundingChunks?.[0]?.web?.uri;
-
-      res.json({ text, groundingUrl });
-    } catch (error: any) {
-      console.error('AI Image Search Error:', error);
-      res.status(500).json({ error: error.message });
-    }
-  });
 
   // Health check
   app.get("/api/health", (req, res) => {

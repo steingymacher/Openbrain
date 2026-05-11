@@ -299,6 +299,37 @@ export default function GreenhouseMonitor({ user }: GreenhouseMonitorProps) {
         </div>
       </div>
 
+      {/* Critical Stock Alerts */}
+      <div className="bg-white dark:bg-[#1a1a1a] p-6 rounded-[32px] border border-red-100 dark:border-red-900/20 shadow-sm transition-colors">
+        <h3 className="text-lg font-serif font-bold text-red-600 dark:text-red-400 mb-4 flex items-center gap-2">
+          <AlertCircle className="w-5 h-5" />
+          {language === 'de' ? 'Kritische Bestands-Warnungen' : 'Critical Stock Warnings'}
+        </h3>
+        <div className="space-y-4">
+          {[
+            { name: 'Salat', stock: 7, min: 24, forecast: 53 },
+            { name: 'Butter', stock: 4, min: 21, forecast: 50 },
+            { name: 'Bier', stock: 2, min: 12, forecast: 26 },
+            { name: 'Hähnchen', stock: 6, min: 22, forecast: 48 },
+            { name: 'Croissants', stock: 7, min: 29, forecast: 41 },
+          ].map((item, idx) => (
+            <div key={idx} className="p-4 bg-red-50 dark:bg-red-500/5 rounded-2xl border border-red-100 dark:border-red-500/10">
+              <div className="flex justify-between items-start mb-2">
+                <span className="font-bold text-red-700 dark:text-red-400">{item.name} · KRITISCH</span>
+                <span className="text-[10px] font-black uppercase tracking-widest px-2 py-0.5 bg-red-100 dark:bg-red-500/20 text-red-600 rounded-full">
+                  {language === 'de' ? 'Sofort Bestellen' : 'Order Now'}
+                </span>
+              </div>
+              <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
+                <strong>Grund:</strong> Bestand zu niedrig ({item.stock} vs. Mindest {item.min}). <br/>
+                <strong>Prognose:</strong> {item.forecast} Einheiten in 7T. <br/>
+                <strong>Aktion:</strong> Sofortige Bestellung erforderlich
+              </p>
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* Planting Log */}
       <div className="space-y-6">
         <div className="flex items-center justify-between">

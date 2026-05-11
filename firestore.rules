@@ -57,15 +57,15 @@ service cloud.firestore {
     // --- 3. Validation Blueprints ---
 
     function isValidUserProfile(data, userId) {
-      return data.keys().hasAll(['uid', 'name', 'email', 'dietaryProfile', 'role', 'language']) &&
-             data.keys().size() >= 6 &&
-             data.keys().size() <= 10 &&
+      return data.keys().hasAll(['uid', 'name', 'email', 'dietaryProfile']) &&
+             data.keys().size() >= 4 &&
+             data.keys().size() <= 12 &&
              data.uid == userId &&
              data.name is string && data.name.size() <= 100 &&
              data.email is string && data.email.size() <= 100 &&
              data.dietaryProfile is map &&
-             data.role in ['user', 'admin', 'staff'] &&
-             data.language in ['de', 'en'];
+             (!('role' in data) || data.role in ['user', 'admin', 'staff']) &&
+             (!('language' in data) || data.language in ['de', 'en']);
     }
 
     function isValidMarketplaceOffer(data) {
