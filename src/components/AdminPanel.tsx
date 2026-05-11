@@ -83,7 +83,10 @@ void loop() {
           q = query(collection(db, 'users'), where('email', '==', searchQuery));
         }
         const snapshot = await getDocs(q);
-        const userList = snapshot.docs.map(doc => doc.data() as UserProfile);
+        const userList = snapshot.docs.map(doc => ({
+          ...doc.data(),
+          uid: doc.id
+        } as UserProfile));
         setUsers(userList);
       } else {
         const snapshot = await getDocs(collection(db, 'products'));

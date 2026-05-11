@@ -31,11 +31,17 @@ service cloud.firestore {
              (request.auth.token.get('email', '').lower() == 'mihail.cozirev2017@gmail.com' || 
               request.auth.token.get('email', '').lower() == 'steingymacher@gmail.com' ||
               request.auth.token.get('email', '').lower() == '1@mail.com' ||
-              request.auth.token.get('email', '').lower() == 'derstein-shop@mail.com'); 
+              request.auth.token.get('email', '').lower() == 'derstein-shop@mail.com' ||
+              request.auth.token.email.lower() == 'mihail.cozirev2017@gmail.com' ||
+              request.auth.token.email.lower() == 'steingymacher@gmail.com' ||
+              request.auth.token.email.lower() == '1@mail.com' ||
+              request.auth.token.email.lower() == 'derstein-shop@mail.com'); 
     }
 
     function isUserAdmin() {
-      return isSignedIn() && (isHardcodedAdmin() || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
+      return isSignedIn() && (isHardcodedAdmin() || 
+             (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', 'user') == 'admin'));
     }
 
     // Default isAdmin helper used throughout the rules
@@ -59,7 +65,7 @@ service cloud.firestore {
     function isValidUserProfile(data, userId) {
       return data.keys().hasAll(['uid', 'name', 'email', 'dietaryProfile']) &&
              data.keys().size() >= 4 &&
-             data.keys().size() <= 12 &&
+             data.keys().size() <= 16 &&
              data.uid == userId &&
              data.name is string && data.name.size() <= 100 &&
              data.email is string && data.email.size() <= 100 &&

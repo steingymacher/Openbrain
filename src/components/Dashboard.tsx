@@ -107,16 +107,21 @@ export default function Dashboard() {
       if (snapshot.exists()) {
         const data = snapshot.data() as UserProfile;
         // Auto-upgrade to admin if email matches
-        const adminEmails = ['mihail.cozirev2017@gmail.com', 'steingymacher@gmail.com', '1@mail.com'];
-        if (adminEmails.includes(data.email) && data.role !== 'admin') {
+        const adminEmails = [
+          'mihail.cozirev2017@gmail.com', 
+          'steingymacher@gmail.com', 
+          '1@mail.com',
+          'derstein-shop@mail.com'
+        ];
+        const isHardcodedAdmin = adminEmails.includes(data.email.toLowerCase());
+        
+        if (isHardcodedAdmin && data.role !== 'admin') {
           console.log('Upgrading user to admin profile in Firestore...');
           try {
             await updateDoc(doc(db, 'users', auth.currentUser!.uid), { role: 'admin' });
-            // The snapshot listener will fire again with updated data
           } catch (err) {
             console.error('Failed to upgrade user to admin:', err);
-            // Even if updateDoc fails, set the profile so the app works
-            setProfile({ ...data, role: adminEmails.includes(data.email) ? 'admin' : data.role });
+            setProfile({ ...data, role: 'admin' });
           }
         } else {
           setProfile(data);
@@ -127,7 +132,8 @@ export default function Dashboard() {
       } else {
         // Create default profile if it doesn't exist
         console.log('Profile not found, creating default...');
-        const isAdminEmail = ['mihail.cozirev2017@gmail.com', 'steingymacher@gmail.com'].includes(auth.currentUser!.email || '');
+        const adminEmails = ['mihail.cozirev2017@gmail.com', 'steingymacher@gmail.com', '1@mail.com', 'derstein-shop@mail.com'];
+        const isAdminEmail = adminEmails.includes(auth.currentUser!.email?.toLowerCase() || '');
         const defaultProfile: UserProfile = {
           uid: auth.currentUser!.uid,
           name: auth.currentUser!.displayName || 'Nutzer',

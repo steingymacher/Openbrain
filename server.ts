@@ -35,11 +35,23 @@ const firebaseApp = initializeApp(firebaseConfigModel);
 const db = getFirestore(firebaseApp, firebaseConfigModel.firestoreDatabaseId);
 
 // Cloudinary Configuration
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
+const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+const apiKey = process.env.CLOUDINARY_API_KEY;
+const apiSecret = process.env.CLOUDINARY_API_SECRET;
+
+console.log('Cloudinary Config Check:', {
+  cloudName: cloudName ? 'Set' : 'Missing',
+  apiKey: apiKey ? 'Set' : 'Missing',
+  apiSecret: apiSecret ? 'Set' : 'Missing'
 });
+
+if (cloudName && apiKey && apiSecret) {
+  cloudinary.config({
+    cloud_name: cloudName,
+    api_key: apiKey,
+    api_secret: apiSecret,
+  });
+}
 
 const storage = multer.memoryStorage();
 const upload = multer({ 
