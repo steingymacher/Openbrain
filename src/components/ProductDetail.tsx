@@ -119,26 +119,22 @@ export default function ProductDetail({ product, serviceMode, userProfile, onAdd
       alert(t('ai_image_name_prompt'));
       return;
     }
-    const apiKey = import.meta.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      alert("GEMINI_API_KEY is not set. Image generation is disabled.");
-      return;
-    }
     setIsSaving(true);
     try {
-      const ai = new GoogleGenAI({ apiKey });
       const promptText = `Find a high-quality product image URL for: ${editedProduct.name} ${editedProduct.brand}. White background. Return ONLY direct URL.`;
-      const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: promptText,
-        config: {
-          tools: [{ googleSearch: {} } as any]
-        }
-      });
       
-      const text = response.text || "";
+      const response = await fetch('/api/ai/image-search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: promptText })
+      });
+
+      if (!response.ok) throw new Error("AI search failed");
+      
+      const result = await response.json();
+      const text = result.text || "";
       const urlMatch = text.match(/https?:\/\/[^\s"']+/);
-      const groundingUrl = response.candidates?.[0]?.groundingMetadata?.groundingChunks?.[0]?.web?.uri;
+      const groundingUrl = result.groundingUrl;
       
       let finalUrl = urlMatch ? urlMatch[0] : groundingUrl;
 

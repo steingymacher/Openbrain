@@ -3,10 +3,10 @@ import { auth, db } from '../firebase';
 import { Chat, Message, UserProfile } from '../types';
 import { chatService } from '../services/chatService';
 import { motion, AnimatePresence } from 'motion/react';
-import { MessageSquare, Send, ChevronLeft, User, Package, Clock } from 'lucide-react';
+import { MessageSquare, Send, ChevronLeft, User, Package, Clock, Trash2 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useTranslation } from '../lib/LanguageContext';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, deleteDoc } from 'firebase/firestore';
 
 interface ChatViewProps {
   userProfile: UserProfile;
@@ -182,9 +182,28 @@ export default function ChatView({ userProfile, initialChatId, onClose }: ChatVi
                       </div>
                     )}
                     <div className={cn(
-                      "flex",
+                      "flex group relative",
                       isMe ? "justify-end" : "justify-start"
                     )}>
+                      {userProfile.role === 'admin' && (
+                        <button
+                          onClick={async () => {
+                            if (window.confirm(t('delete_confirm'))) {
+                              try {
+                                await deleteDoc(doc(db, 'chats', selectedChat.id, 'messages', msg.id));
+                              } catch (err) {
+                                console.error('Error deleting message:', err);
+                              }
+                            }
+                          }}
+                          className={cn(
+                            "absolute top-1/2 -translate-y-1/2 p-2 text-red-500 opacity-0 group-hover:opacity-100 transition-opacity bg-white dark:bg-[#1a1a1a] rounded-full shadow-md z-10",
+                            isMe ? "-left-12" : "-right-12"
+                          )}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                       <div className={cn(
                         "max-w-[80%] p-4 rounded-3xl text-sm shadow-sm transition-all",
                         isMe ? "bg-[#5A5A40] text-white rounded-br-none" : "bg-white dark:bg-[#1a1a1a] text-gray-800 dark:text-gray-200 rounded-bl-none border border-gray-100 dark:border-gray-800"

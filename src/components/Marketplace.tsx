@@ -482,11 +482,12 @@ export default function Marketplace({ userProfile, onContact }: MarketplaceProps
                 </div>
 
                 <div className="pt-4 flex flex-col gap-4 border-t border-gray-200/50 dark:border-gray-800/50">
-                  {offer.userId === userProfile.uid ? (
+                  {(offer.userId === userProfile.uid || userProfile.role === 'admin') ? (
                     <div className="flex flex-col gap-2">
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => handleUpdateStatus(offer.id, 'active')}
+                          disabled={offer.userId !== userProfile.uid && userProfile.role !== 'admin'}
                           className={cn(
                             "flex-1 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all",
                             offer.status === 'active' ? "bg-emerald-600 text-white shadow-md shadow-emerald-500/20" : "bg-gray-100 dark:bg-white/5 text-gray-500 hover:bg-gray-200"
@@ -496,6 +497,7 @@ export default function Marketplace({ userProfile, onContact }: MarketplaceProps
                         </button>
                         <button
                           onClick={() => handleUpdateStatus(offer.id, 'reserved')}
+                          disabled={offer.userId !== userProfile.uid && userProfile.role !== 'admin'}
                           className={cn(
                             "flex-1 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all",
                             offer.status === 'reserved' ? "bg-amber-500 text-white shadow-md shadow-amber-500/20" : "bg-gray-100 dark:bg-white/5 text-gray-500 hover:bg-gray-200"
@@ -505,6 +507,7 @@ export default function Marketplace({ userProfile, onContact }: MarketplaceProps
                         </button>
                         <button
                           onClick={() => handleUpdateStatus(offer.id, 'sold')}
+                          disabled={offer.userId !== userProfile.uid && userProfile.role !== 'admin'}
                           className={cn(
                             "flex-1 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all",
                             offer.status === 'sold' ? "bg-gray-800 text-white shadow-md shadow-black/20" : "bg-gray-100 dark:bg-white/5 text-gray-500 hover:bg-gray-200"
@@ -522,7 +525,8 @@ export default function Marketplace({ userProfile, onContact }: MarketplaceProps
                             setPreviewUrl(null);
                             setEditingOffer(offer);
                           }}
-                          className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-gray-50 dark:bg-white/5 text-gray-600 dark:text-gray-400 rounded-xl text-[10px] font-bold uppercase tracking-widest border border-gray-100 dark:border-gray-800 hover:bg-gray-100 transition-all"
+                          disabled={offer.userId !== userProfile.uid && userProfile.role !== 'admin'}
+                          className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-gray-50 dark:bg-white/5 text-gray-600 dark:text-gray-400 rounded-xl text-[10px] font-bold uppercase tracking-widest border border-gray-100 dark:border-gray-800 hover:bg-gray-100 transition-all disabled:opacity-50"
                         >
                           <Edit className="w-3.5 h-3.5" />
                           {t('edit')}

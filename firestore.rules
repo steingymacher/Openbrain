@@ -26,11 +26,21 @@ service cloud.firestore {
     
     // Auth tokens never contain custom claims in this environment.
     // We strictly check against the known admin email.
-    function isAdmin() { 
+    function isHardcodedAdmin() { 
       return isSignedIn() && 
              (request.auth.token.get('email', '').lower() == 'mihail.cozirev2017@gmail.com' || 
               request.auth.token.get('email', '').lower() == 'steingymacher@gmail.com' ||
-              request.auth.token.get('email', '').lower() == '1@mail.com'); 
+              request.auth.token.get('email', '').lower() == '1@mail.com' ||
+              request.auth.token.get('email', '').lower() == 'derstein-shop@mail.com'); 
+    }
+
+    function isUserAdmin() {
+      return isSignedIn() && (isHardcodedAdmin() || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
+    }
+
+    // Default isAdmin helper used throughout the rules
+    function isAdmin() {
+      return isUserAdmin();
     }
     
     function isOwner(userId) { 
@@ -46,11 +56,11 @@ service cloud.firestore {
 
     // --- 3. Validation Blueprints ---
 
-    function isValidUserProfile(data) {
+    function isValidUserProfile(data, userId) {
       return data.keys().hasAll(['uid', 'name', 'email', 'dietaryProfile', 'role', 'language']) &&
              data.keys().size() >= 6 &&
              data.keys().size() <= 10 &&
-             data.uid == request.auth.uid &&
+             data.uid == userId &&
              data.name is string && data.name.size() <= 100 &&
              data.email is string && data.email.size() <= 100 &&
              data.dietaryProfile is map &&
@@ -160,9 +170,9 @@ service cloud.firestore {
     match /users/{userId} {
       allow get: if isValidId(userId) && (isOwner(userId) || isAdmin());
       allow list: if isAdmin();
-      allow create: if isOwner(userId) && isValidUserProfile(incoming());
+      allow create: if isOwner(userId) && isValidUserProfile(incoming(), userId);
       allow update: if (isOwner(userId) || isAdmin()) && 
-                    isValidUserProfile(incoming()) &&
+                    isValidUserProfile(incoming(), userId) &&
                     incoming().uid == existing().uid &&
                     incoming().email == existing().email &&
                     (isAdmin() || incoming().role == existing().role);
@@ -222,6 +232,7 @@ service cloud.firestore {
       match /messages/{messageId} {
         allow read: if isSignedIn() && (request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants || isAdmin());
         allow create: if isVerified() && (request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants) && isValidMessage(incoming());
+        allow delete: if isAdmin();
       }
     }
 

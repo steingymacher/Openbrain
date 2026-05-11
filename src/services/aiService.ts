@@ -1,19 +1,4 @@
-import { GoogleGenAI } from "@google/genai";
 import { Product, GreenhouseStatus, UserProfile } from "../types";
-
-let genAI: GoogleGenAI | null = null;
-
-function getAI() {
-  if (!genAI) {
-    // Note: process.env.GEMINI_API_KEY is the preferred way in this environment
-    const apiKey = (process.env.GEMINI_API_KEY) || (import.meta as any).env.VITE_GEMINI_API_KEY;
-    if (!apiKey) {
-      throw new Error("GEMINI_API_KEY is not set.");
-    }
-    genAI = new GoogleGenAI({ apiKey });
-  }
-  return genAI;
-}
 
 export interface ChatMessage {
   role: 'user' | 'model';
@@ -89,7 +74,7 @@ export async function* getAIChatResponse(
     - Kurze bis mittellange Antworten.
     - Einfache Sprache, positiv und modern.
     - WICHTIG: Nutze KEINERLEI Markdown-Formatierung wie Sternchen (**) für Fettschrift oder Rauten (##) für Überschriften. Antworte in sauberem Reintext.
-    - WICHTIG: Gib NIEMALS technische Variablen wie "\${context...}" aus.
+    - WICHTIG: Gib NIEMALS technische Variablen wie "context.user..." aus.
     - Sei menschlich, nicht rein technisch oder kalt.
     - Wenn Produkte nicht im Sortiment sind, schlage Alternativen vor.
 
@@ -114,33 +99,24 @@ export async function* getAIChatResponse(
   `;
 
   try {
-    const ai = getAI();
-    const contents = [
-      ...history.map(msg => ({
-        role: msg.role === 'user' ? 'user' as const : 'model' as const,
-        parts: [{ text: msg.text }]
-      })),
-      {
-        role: 'user' as const,
-        parts: [{ text: prompt }]
-      }
-    ];
-
-    const stream = await ai.models.generateContentStream({
-      model: "gemini-3-flash-preview",
-      contents,
-      config: {
-        systemInstruction,
-        temperature: 0.7,
-        topP: 0.8,
-        topK: 40,
-      },
+    const response = await fetch('/api/ai/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt, history, systemInstruction })
     });
 
-    for await (const chunk of stream) {
-      if (chunk.text) {
-        yield chunk.text;
-      }
+    if (!response.ok) {
+      throw new Error("Fehler beim Abrufen der KI-Antwort.");
+    }
+
+    const reader = response.body?.getReader();
+    if (!reader) return;
+
+    const decoder = new TextDecoder();
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      yield decoder.decode(value);
     }
   } catch (error) {
     console.error("AI Service Error:", error);
