@@ -14,8 +14,18 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Initialize Firebase for backend use
-const firebaseApp = initializeApp(firebaseConfig);
-const db = getFirestore(firebaseApp, firebaseConfig.firestoreDatabaseId);
+const firebaseConfigModel = {
+  apiKey: process.env.VITE_FIREBASE_API_KEY || firebaseConfig.apiKey,
+  authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN || firebaseConfig.authDomain,
+  projectId: process.env.VITE_FIREBASE_PROJECT_ID || firebaseConfig.projectId,
+  storageBucket: process.env.VITE_FIREBASE_STORAGE_BUCKET || firebaseConfig.storageBucket,
+  messagingSenderId: process.env.VITE_FIREBASE_MESSAGING_SENDER_ID || firebaseConfig.messagingSenderId,
+  appId: process.env.VITE_FIREBASE_APP_ID || firebaseConfig.appId,
+  firestoreDatabaseId: process.env.VITE_FIREBASE_DATABASE_ID || firebaseConfig.firestoreDatabaseId,
+};
+
+const firebaseApp = initializeApp(firebaseConfigModel);
+const db = getFirestore(firebaseApp, firebaseConfigModel.firestoreDatabaseId);
 
 // Cloudinary Configuration
 cloudinary.config({
