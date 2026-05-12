@@ -50,7 +50,11 @@ export async function* getAIChatResponse(
       body: JSON.stringify({ prompt, history, systemInstruction })
     });
 
-    if (!response.ok) throw new Error("Fehler beim Abrufen der KI-Antwort.");
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error("AI Proxy Error details:", errorData);
+      throw new Error(`Fehler beim Abrufen der KI-Antwort (Status: ${response.status})`);
+    }
 
     const reader = response.body?.getReader();
     if (!reader) return;
@@ -75,7 +79,11 @@ export async function getAIImageSearch(prompt: string) {
       body: JSON.stringify({ prompt })
     });
 
-    if (!response.ok) throw new Error("AI search failed");
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error("AI Search Proxy Error details:", errorData);
+      throw new Error("AI search failed");
+    }
     return await response.json();
   } catch (err) {
     console.error("AI image search proxy error:", err);
