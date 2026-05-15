@@ -225,137 +225,156 @@ export default function AIChatAssistant({ userProfile, currentCart, onSaveCart }
             initial={{ opacity: 0, y: 100, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 100, scale: 0.95 }}
-            className="fixed inset-0 sm:inset-auto sm:bottom-28 sm:right-8 w-full sm:w-[420px] sm:h-[650px] bg-white dark:bg-[#1a1a1a] sm:rounded-[40px] shadow-2xl z-[10000] flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-10 duration-300 transition-colors"
+            className="fixed inset-x-0 top-0 bottom-0 sm:inset-auto sm:bottom-28 sm:right-8 w-full sm:w-[420px] sm:h-[650px] bg-white dark:bg-[#1a1a1a] sm:rounded-[40px] shadow-2xl z-[10000] flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-10 duration-300 transition-colors h-[100dvh] sm:h-[650px]"
           >
             {/* Header */}
-            <div className="p-6 bg-[#5A5A40] text-white flex items-center justify-between shadow-lg">
-              <div className="flex items-center gap-3">
-                {messages.length > 0 && (
-                  <button 
-                    onClick={resetChat}
-                    className="p-1.5 hover:bg-white/10 rounded-full transition-colors mr-1"
-                    title="Zurück zum Hauptmenü"
-                  >
-                    <ChevronLeft className="w-6 h-6" />
-                  </button>
-                )}
-                <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+            <div className="p-6 bg-[#5A5A40] dark:bg-black/80 backdrop-blur-md text-white flex items-center justify-between shadow-xl border-b border-white/5 relative overflow-hidden shrink-0">
+              <div className="absolute inset-0 bg-gradient-to-r from-white/5 to-transparent pointer-events-none" />
+              <div className="flex items-center gap-3 relative z-10">
+                <AnimatePresence mode="wait">
+                  {messages.length > 0 && (
+                    <motion.button 
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -10 }}
+                      onClick={resetChat}
+                      className="p-1.5 hover:bg-white/10 rounded-full transition-colors mr-1"
+                      title="Zurück zum Hauptmenü"
+                    >
+                      <ChevronLeft className="w-6 h-6" />
+                    </motion.button>
+                  )}
+                </AnimatePresence>
+                <div className="w-11 h-11 bg-white/20 rounded-2xl flex items-center justify-center shadow-inner backdrop-blur-sm">
                   <Sparkles className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <h3 className="font-serif font-bold text-lg leading-tight">Acker-Assistent</h3>
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-                    <p className="text-[10px] uppercase font-bold tracking-widest text-white/60">KI-Experte aktiv</p>
+                  <h3 className="font-serif font-black text-xl leading-tight tracking-tight">Acker-Assistent</h3>
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <span className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
+                    <p className="text-[10px] uppercase font-black tracking-widest text-white/50">KI-Experte online</p>
                   </div>
                 </div>
               </div>
               <button 
                 onClick={() => setIsOpen(false)}
-                className="p-2 hover:bg-white/10 rounded-full transition-colors"
+                className="p-2 hover:bg-white/10 rounded-full transition-colors relative z-10"
               >
                 <X className="w-6 h-6" />
               </button>
             </div>
 
             {/* Messages Area */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-6 no-scrollbar bg-[#F5F5F0]/30 dark:bg-black/20 selection:bg-[#5A5A40]/20 transition-colors">
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 overscroll-contain bg-[#FDFDFB] dark:bg-[#050505] selection:bg-[#5A5A40]/20 transition-colors">
               {messages.length === 0 && (
-                <div className="space-y-6 mt-4">
-                  <div className="text-center space-y-2">
-                    <p className="text-gray-500 text-sm font-medium">
-                      "Hallo {userProfile.name}! Ich helfe dir beim nachhaltigen Einkaufen. Was möchtest du tun?"
-                    </p>
+                <div className="space-y-8 mt-4 animate-in fade-in slide-in-from-bottom-5 duration-700">
+                  <div className="text-center space-y-4">
+                    <div className="mx-auto w-16 h-16 bg-[#5A5A40]/5 dark:bg-white/5 rounded-[24px] flex items-center justify-center">
+                      <ChefHat className="w-8 h-8 text-[#5A5A40] dark:text-[#a0a090]" />
+                    </div>
+                    <div>
+                      <h4 className="text-lg font-serif font-bold text-gray-900 dark:text-white">Wie kann ich helfen?</h4>
+                      <p className="text-gray-500 dark:text-gray-400 text-sm mt-1 max-w-[240px] mx-auto leading-relaxed">
+                        Ich bin dein Experte für nachhaltigen Genuss im Food-Connect-Markt.
+                      </p>
+                    </div>
                   </div>
                   
                   <div className="grid grid-cols-1 gap-3">
                     <button
                       onClick={() => handleSend("Hallo! Ich möchte einfach mit dir chatten.")}
-                      className="flex items-center gap-3 p-4 bg-white dark:bg-white/5 rounded-3xl border border-[#5A5A40]/20 dark:border-white/10 text-left hover:border-[#5A5A40] hover:bg-[#5A5A40]/5 transition-all group shadow-sm"
+                      className="flex items-center gap-3 p-4 bg-white dark:bg-[#111] rounded-3xl border border-gray-100 dark:border-white/5 text-left hover:border-[#5A5A40]/40 hover:bg-gray-50 dark:hover:bg-[#151515] hover:shadow-md transition-all group"
                     >
                       <div className="p-2 bg-[#5A5A40]/10 rounded-xl group-hover:bg-[#5A5A40]/20 transition-colors">
                         <MessageSquare className="w-5 h-5 text-[#5A5A40]" />
                       </div>
                       <div>
-                        <span className="text-sm font-bold text-[#5A5A40] dark:text-[#a0a090] block">Einfach Chatten</span>
-                        <span className="text-[10px] text-gray-400 dark:text-gray-500">Stelle mir eine beliebige Frage</span>
+                        <span className="text-sm font-bold text-gray-900 dark:text-white block group-hover:text-[#5A5A40] transition-colors">Einfach Chatten</span>
+                        <span className="text-[10px] text-gray-400 dark:text-gray-500 font-medium">Ich beantworte alle deine Fragen</span>
                       </div>
                     </button>
 
-                    <div className="flex items-center gap-2 my-2">
-                      <div className="h-px bg-gray-100 dark:bg-gray-800 flex-1" />
-                      <p className="text-[10px] uppercase font-bold tracking-widest text-gray-300 dark:text-gray-600">Vorschläge</p>
-                      <div className="h-px bg-gray-100 dark:bg-gray-800 flex-1" />
+                    <div className="flex items-center gap-4 my-4">
+                      <div className="h-px bg-gray-100 dark:bg-white/5 flex-1" />
+                      <p className="text-[10px] uppercase font-black tracking-[0.2em] text-gray-300 dark:text-gray-600">Schnellzugriff</p>
+                      <div className="h-px bg-gray-100 dark:bg-white/5 flex-1" />
                     </div>
 
-                    {suggestions.map((s, i) => (
-                      <button
-                        key={i}
-                        onClick={() => setInput(s.prompt)}
-                        className="flex items-center gap-3 p-4 bg-white dark:bg-white/5 rounded-3xl border border-gray-100 dark:border-gray-800 text-left hover:border-[#5A5A40] hover:bg-[#5A5A40]/5 transition-all group"
-                      >
-                        <div className="p-2 bg-gray-50 dark:bg-white/5 rounded-xl group-hover:bg-[#5A5A40]/10 transition-colors">
-                          <s.icon className="w-5 h-5 text-gray-400 dark:text-gray-500 group-hover:text-[#5A5A40] dark:group-hover:text-[#a0a090]" />
-                        </div>
-                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{s.label}</span>
-                      </button>
-                    ))}
+                    <div className="grid grid-cols-1 gap-2.5">
+                      {suggestions.map((s, i) => (
+                        <button
+                          key={i}
+                          onClick={() => setInput(s.prompt)}
+                          className="flex items-center gap-3 p-4 bg-white dark:bg-[#111] rounded-2xl border border-gray-100 dark:border-white/5 text-left hover:border-[#5A5A40]/30 hover:bg-gray-50 dark:hover:bg-[#151515] hover:shadow-sm transition-all group"
+                        >
+                          <div className="p-2 bg-gray-50 dark:bg-[#1a1a1a] rounded-[14px] group-hover:bg-[#5A5A40]/10 transition-colors">
+                            <s.icon className="w-5 h-5 text-gray-400 dark:text-gray-500 group-hover:text-[#5A5A40] dark:group-hover:text-[#a0a090]" />
+                          </div>
+                          <span className="text-sm font-semibold text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">{s.label}</span>
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
               )}
 
-              {messages.map((msg, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, y: 10, scale: 0.98 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  className={cn(
-                    "flex",
-                    msg.role === 'user' ? "justify-end" : "justify-start"
-                  )}
-                >
-                  <div
+              <div className="space-y-6">
+                {messages.map((msg, i) => (
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0, y: 12, scale: 0.97 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    transition={{ type: "spring", damping: 25, stiffness: 350 }}
                     className={cn(
-                      "max-w-[85%] p-4 rounded-[28px]",
-                      msg.role === 'user'
-                        ? "bg-[#5A5A40] text-white rounded-tr-none shadow-md"
-                        : "bg-white dark:bg-white/10 text-gray-800 dark:text-white rounded-tl-none border border-gray-100 dark:border-white/10 shadow-sm"
+                      "flex group",
+                      msg.role === 'user' ? "justify-end" : "justify-start"
                     )}
                   >
-                    <p className="text-sm leading-relaxed whitespace-pre-wrap">{cleanText(msg.text)}</p>
-                    
-                    {msg.recipeData && msg.role === 'model' && (
-                      <motion.div 
-                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        className="mt-4 pt-4 border-t border-gray-100/50 flex flex-col gap-3"
-                      >
-                        <div className="flex items-center gap-2 text-[#5A5A40]">
-                          {msg.recipeData.type === 'save_current_cart' ? <ShoppingBasket className="w-4 h-4" /> : <ChefHat className="w-4 h-4" />}
-                          <span className="text-[10px] font-black uppercase tracking-widest opacity-60">
-                            {msg.recipeData.type === 'save_current_cart' ? 'Funktion erkannt' : 'Rezept / Liste erkannt'}
-                          </span>
-                        </div>
-                        <button
-                          onClick={() => handleAcceptData(msg.recipeData)}
-                          className="flex items-center justify-center gap-3 w-full py-4 bg-[#5A5A40] text-white rounded-2xl text-xs font-bold hover:shadow-xl transition-all active:scale-[0.98] shadow-md"
+                    <div
+                      className={cn(
+                        "max-w-[88%] p-4.5 rounded-[28px] shadow-sm relative",
+                        msg.role === 'user'
+                          ? "bg-gradient-to-br from-[#5A5A40] to-[#4A4A30] text-white rounded-tr-none shadow-lg shadow-[#5A5A40]/10"
+                          : "bg-white dark:bg-[#1a1a1a] text-gray-800 dark:text-gray-100 rounded-tl-none border border-gray-100 dark:border-[#2a2a2a] shadow-sm"
+                      )}
+                    >
+                      <p className="text-[15px] leading-[1.6] whitespace-pre-wrap font-medium">{cleanText(msg.text)}</p>
+                      
+                      {msg.recipeData && msg.role === 'model' && (
+                        <motion.div 
+                          initial={{ opacity: 0, y: 8 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="mt-5 p-4 bg-[#F5F5F0] dark:bg-black/30 rounded-2xl border border-[#5A5A40]/10 dark:border-white/5 flex flex-col gap-4 shadow-inner"
                         >
-                          {msg.recipeData.type === 'save_current_cart' ? <Check className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
-                          {msg.recipeData.type === 'save_current_cart' ? 'Warenkorb jetzt speichern' : 'Zur Einkaufsliste hinzufügen'}
-                        </button>
-                      </motion.div>
-                    )}
-                  </div>
-                </motion.div>
-              ))}
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-8 h-8 bg-[#5A5A40]/10 dark:bg-white/5 rounded-full flex items-center justify-center">
+                              {msg.recipeData.type === 'save_current_cart' ? <ShoppingBasket className="w-4 h-4 text-[#5A5A40]" /> : <ChefHat className="w-4 h-4 text-[#5A5A40]" />}
+                            </div>
+                            <span className="text-[10px] font-black uppercase tracking-[0.15em] text-[#5A5A40] dark:text-[#a0a090] opacity-80">
+                              {msg.recipeData.type === 'save_current_cart' ? 'Aktion Verfügbar' : 'Vorschlag Verarbeiten'}
+                            </span>
+                          </div>
+                          <button
+                            onClick={() => handleAcceptData(msg.recipeData)}
+                            className="flex items-center justify-center gap-3 w-full py-4 bg-[#5A5A40] text-white rounded-xl text-sm font-bold hover:shadow-[0_8px_20px_-4px_rgba(90,90,64,0.4)] transition-all active:scale-[0.97] hover:-translate-y-0.5"
+                          >
+                            {msg.recipeData.type === 'save_current_cart' ? <Check className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
+                            {msg.recipeData.type === 'save_current_cart' ? 'Warenkorb jetzt speichern' : 'Zur Einkaufsliste'}
+                          </button>
+                        </motion.div>
+                      )}
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
               
               {isTyping && (
                 <div className="flex justify-start">
-                  <div className="bg-white p-4 rounded-[28px] rounded-tl-none border border-gray-100 shadow-sm">
-                    <div className="flex gap-1">
-                      <motion.span animate={{ opacity: [0.3, 1, 0.3] }} transition={{ duration: 1, repeat: Infinity }} className="w-1.5 h-1.5 bg-[#5A5A40] rounded-full" />
-                      <motion.span animate={{ opacity: [0.3, 1, 0.3] }} transition={{ duration: 1, repeat: Infinity, delay: 0.2 }} className="w-1.5 h-1.5 bg-[#5A5A40] rounded-full" />
-                      <motion.span animate={{ opacity: [0.3, 1, 0.3] }} transition={{ duration: 1, repeat: Infinity, delay: 0.4 }} className="w-1.5 h-1.5 bg-[#5A5A40] rounded-full" />
+                  <div className="bg-white dark:bg-[#1a1a1a] p-5 rounded-[28px] rounded-tl-none border border-gray-100 dark:border-white/5 shadow-sm">
+                    <div className="flex gap-1.5 items-center">
+                      <motion.span animate={{ scale: [1, 1.2, 1], opacity: [0.3, 1, 0.3] }} transition={{ duration: 1.2, repeat: Infinity }} className="w-2 h-2 bg-[#5A5A40] rounded-full" />
+                      <motion.span animate={{ scale: [1, 1.2, 1], opacity: [0.3, 1, 0.3] }} transition={{ duration: 1.2, repeat: Infinity, delay: 0.2 }} className="w-2 h-2 bg-[#5A5A40] rounded-full" />
+                      <motion.span animate={{ scale: [1, 1.2, 1], opacity: [0.3, 1, 0.3] }} transition={{ duration: 1.2, repeat: Infinity, delay: 0.4 }} className="w-2 h-2 bg-[#5A5A40] rounded-full" />
                     </div>
                   </div>
                 </div>
@@ -364,11 +383,11 @@ export default function AIChatAssistant({ userProfile, currentCart, onSaveCart }
             </div>
 
             {/* Input Area */}
-          <div className="p-4 sm:p-6 bg-white dark:bg-[#1a1a1a] border-t border-gray-100 dark:border-gray-800 flex flex-col gap-3 pb-[max(1.5rem,env(safe-area-inset-bottom))] transition-colors">
-            <div className="flex gap-2 mb-1 overflow-x-auto no-scrollbar pb-2">
+          <div className="p-4 sm:p-6 bg-white dark:bg-[#111] border-t border-gray-100 dark:border-white/5 flex flex-col gap-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] transition-colors relative z-20">
+            <div className="flex gap-2.5 overflow-x-auto no-scrollbar -mx-2 px-2 pb-1">
                <button 
                 onClick={() => handleSend("Schlage mir eine Einkaufsliste für 3 gesunde Mahlzeiten vor. Füge am Ende den [DATA] Block ein.")}
-                className="flex-shrink-0 flex items-center gap-2 px-5 py-2.5 bg-[#5A5A40]/10 hover:bg-[#5A5A40]/20 text-[#5A5A40] rounded-full text-[10px] font-black uppercase transition-all whitespace-nowrap shadow-sm"
+                className="flex-shrink-0 flex items-center gap-2 px-5 py-2.5 bg-[#5A5A40]/5 hover:bg-[#5A5A40]/10 dark:bg-white/5 dark:hover:bg-white/10 text-[#5A5A40] dark:text-[#a0a090] rounded-full text-[10px] font-black uppercase tracking-wider transition-all shadow-sm border border-[#5A5A40]/10"
                >
                  <ChefHat className="w-3.5 h-3.5" />
                  Einkaufszettel erstellen
@@ -376,50 +395,56 @@ export default function AIChatAssistant({ userProfile, currentCart, onSaveCart }
                {currentCart.length > 0 && (
                  <button 
                   onClick={() => handleAcceptData({ type: 'save_current_cart' })}
-                  className="flex-shrink-0 flex items-center gap-2 px-5 py-2.5 bg-orange-50 hover:bg-orange-100 text-orange-700 rounded-full text-[10px] font-black uppercase transition-all whitespace-nowrap shadow-sm border border-orange-100"
+                  className="flex-shrink-0 flex items-center gap-2 px-5 py-2.5 bg-orange-50/50 hover:bg-orange-100/50 dark:bg-orange-950/20 dark:hover:bg-orange-900/30 text-orange-700 dark:text-orange-400 rounded-full text-[10px] font-black uppercase tracking-wider transition-all shadow-sm border border-orange-100/30"
                  >
                    <ShoppingBasket className="w-3.5 h-3.5" />
                    Warenkorb speichern
                  </button>
                )}
             </div>
+            
             <form
               onSubmit={(e) => {
                 e.preventDefault();
                 handleSend();
               }}
-              className="relative bg-gray-50 dark:bg-white/5 rounded-[24px] p-1 border border-gray-100 dark:border-gray-800 focus-within:border-[#5A5A40]/30 focus-within:bg-white dark:focus-within:bg-[#2a2a2a] transition-all shadow-inner"
+              className="relative group block"
             >
-              <textarea
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="Was möchtest du wissen?"
-                rows={3}
-                className="w-full bg-transparent border-none focus:ring-0 text-sm px-4 py-3 resize-none font-medium text-gray-800 dark:text-white"
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSend();
-                  }
-                }}
-              />
-              <div className="flex justify-between items-center px-4 pb-2">
-                <span className="text-[9px] text-gray-300 font-bold uppercase tracking-widest leading-none">Shift+Enter für Absatz</span>
-                <button
-                  type="submit"
-                  disabled={!input.trim() || isTyping}
-                  className="w-10 h-10 bg-[#5A5A40] text-white rounded-full flex items-center justify-center disabled:opacity-20 transition-all shadow-md active:scale-90"
-                >
-                  {isTyping ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                </button>
+              <div className="relative bg-gray-50 dark:bg-white/5 rounded-[30px] p-1.5 border border-gray-200 dark:border-white/10 focus-within:border-[#5A5A40]/50 focus-within:bg-white dark:focus-within:bg-black focus-within:shadow-[0_12px_40px_rgba(0,0,0,0.08)] dark:focus-within:shadow-[0_12px_40px_rgba(0,0,0,0.3)] transition-all duration-300">
+                <textarea
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  placeholder="Frag den Acker-Assistenten..."
+                  rows={2}
+                  className="w-full bg-transparent border-none focus:ring-0 text-[15px] px-5 py-3.5 resize-none font-medium text-gray-800 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-600"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSend();
+                    }
+                  }}
+                />
+                <div className="flex justify-between items-center px-4 pb-2.5">
+                  <div className="flex items-center gap-3">
+                    <span className="text-[9px] text-gray-300 dark:text-gray-600 font-bold uppercase tracking-[0.1em]">Shift+⏎ für Absatz</span>
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={!input.trim() || isTyping}
+                    className="w-11 h-11 bg-[#5A5A40] text-white rounded-[20px] flex items-center justify-center disabled:opacity-20 transition-all shadow-lg active:scale-90 hover:shadow-[#5A5A40]/20"
+                  >
+                    {isTyping ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
+                  </button>
+                </div>
               </div>
             </form>
-            <div className="flex justify-center mt-1">
+
+            <div className="flex justify-center -mb-2">
               <button 
                 onClick={resetChat}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gray-50 dark:bg-white/5 text-[10px] text-gray-400 dark:text-gray-500 uppercase font-bold tracking-wider hover:bg-gray-100 dark:hover:bg-white/10 hover:text-[#5A5A40] dark:hover:text-[#a0a090] transition-all border border-gray-100 dark:border-gray-800"
+                className="flex items-center gap-2 px-4 py-2 rounded-full hover:bg-gray-50 dark:hover:bg-white/5 text-[10px] text-gray-400 dark:text-gray-600 uppercase font-bold tracking-widest transition-all"
               >
-                <RefreshCw className="w-3 h-3" />
+                <RefreshCw className="w-3.5 h-3.5" />
                 {t('reset_chat')}
               </button>
             </div>

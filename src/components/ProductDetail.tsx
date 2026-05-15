@@ -162,7 +162,7 @@ export default function ProductDetail({ product, serviceMode, userProfile, onAdd
       <motion.div 
         initial={{ y: '100%' }}
         animate={{ y: 0 }}
-        className="w-full max-w-2xl bg-white dark:bg-[#1a1a1a] rounded-t-[40px] sm:rounded-[40px] overflow-hidden flex flex-col max-h-[90vh] relative transition-colors"
+        className="w-full max-w-2xl bg-white dark:bg-[#1a1a1a] rounded-t-[40px] sm:rounded-[40px] overflow-hidden flex flex-col max-h-[90vh] sm:max-h-[85vh] relative transition-colors shadow-2xl"
       >
         <button 
           onClick={onCancel}
@@ -172,7 +172,7 @@ export default function ProductDetail({ product, serviceMode, userProfile, onAdd
           <X className="w-6 h-6 dark:text-white" />
         </button>
 
-        <div className="flex-1 overflow-y-auto p-8">
+        <div className="flex-1 overflow-y-auto p-8 overscroll-contain scroll-smooth">
           {isEditing ? (
             <div className="space-y-4 mb-6">
               <div>

@@ -76,79 +76,98 @@ async function startServer() {
   // AI Setup Helpers
   async function handleOpenRouterChat(req: any, res: any) {
     const { prompt, history, systemInstruction } = req.body;
-    const model = req.body.model || "inclusionai/ring-2.6-1t:free";
     
-    try {
-      const response = await axios.post(
-        "https://openrouter.ai/api/v1/chat/completions",
-        {
-          model: model,
-          messages: [
-            { role: "system", content: systemInstruction },
-            ...history.map((msg: any) => ({
-              role: msg.role === 'user' ? 'user' : 'assistant',
-              content: msg.text
-            })),
-            { role: "user", content: prompt }
-          ],
-          stream: true,
-        },
-        {
-          headers: {
-            "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
-            "HTTP-Referer": "https://ai.studio/build",
-            "X-Title": "Food-Connect-Markt",
-            "Content-Type": "application/json"
+    // Fallback model list
+    const fallbackModels = [
+      "inclusionai/ring-2.6-1t:free",
+      "baidu/cobuddy:free",
+      "openrouter/owl-alpha",
+      "nvidia/nemotron-3-super-120b-a12b:free",
+      "recraft/recraft-v4.1-pro-vector"
+    ];
+
+    let lastError: any = null;
+
+    for (const model of fallbackModels) {
+      try {
+        console.log(`Attempting OpenRouter request with model: ${model}`);
+        const response = await axios.post(
+          "https://openrouter.ai/api/v1/chat/completions",
+          {
+            model: model,
+            messages: [
+              { role: "system", content: systemInstruction },
+              ...history.map((msg: any) => ({
+                role: msg.role === 'user' ? 'user' : 'assistant',
+                content: msg.text
+              })),
+              { role: "user", content: prompt }
+            ],
+            stream: true,
           },
-          responseType: "stream"
-        }
-      );
+          {
+            headers: {
+              "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
+              "HTTP-Referer": "https://ai.studio/build",
+              "X-Title": "Food-Connect-Markt",
+              "Content-Type": "application/json"
+            },
+            responseType: "stream"
+          }
+        );
 
-      res.setHeader('Content-Type', 'text/plain');
-      res.setHeader('Transfer-Encoding', 'chunked');
+        res.setHeader('Content-Type', 'text/plain');
+        res.setHeader('Transfer-Encoding', 'chunked');
 
-      response.data.on("data", (chunk: Buffer) => {
-        const chunks = chunk.toString().split("\n");
-        for (const line of chunks) {
-          if (line.startsWith("data: ")) {
-            const data = line.slice(6).trim();
-            if (data === "[DONE]") continue;
-            try {
-              const parsed = JSON.parse(data);
-              const content = parsed.choices?.[0]?.delta?.content;
-              if (content) res.write(content);
-            } catch (e) {
-              // Ignore partial or malformed JSON
+        response.data.on("data", (chunk: Buffer) => {
+          const chunks = chunk.toString().split("\n");
+          for (const line of chunks) {
+            if (line.startsWith("data: ")) {
+              const data = line.slice(6).trim();
+              if (data === "[DONE]") continue;
+              try {
+                const parsed = JSON.parse(data);
+                const content = parsed.choices?.[0]?.delta?.content;
+                if (content) res.write(content);
+              } catch (e) {
+                // Ignore partial or malformed JSON
+              }
             }
           }
-        }
-      });
+        });
 
-      response.data.on("end", () => res.end());
-      response.data.on("error", (err: any) => {
-        console.error("OpenRouter Stream Error:", err);
-        if (!res.headersSent) res.status(500).send("Stream error");
-        res.end();
-      });
+        response.data.on("end", () => res.end());
+        response.data.on("error", (err: any) => {
+          console.error("OpenRouter Stream Error:", err);
+          if (!res.headersSent) res.status(500).send("Stream error");
+          res.end();
+        });
 
-    } catch (error: any) {
-      const status = error.response?.status || 500;
-      const message = error.message || "Unknown error";
-      
-      // When responseType is 'stream', the error data is an IncomingMessage (stream)
-      // Logging it directly causes circular reference errors.
-      console.error(`OpenRouter Error [${status}]:`, message);
-      
-      if (error.response?.data && typeof error.response.data.on === 'function') {
-        // It's a stream, we could try to read it, but for logging we'll just note it's a stream error
-        console.error('OpenRouter Error Body: <stream response>');
-      } else if (error.response?.data) {
-        console.error('OpenRouter Error Body:', JSON.stringify(error.response.data));
+        // If we successfully started the stream, we are done
+        return;
+
+      } catch (error: any) {
+        lastError = error;
+        const status = error.response?.status || 500;
+        const message = error.message || "Unknown error";
+        console.error(`OpenRouter Attempt Failed [${model}] [${status}]:`, message);
+        
+        // If it's a 401 (Unauthorized) or 400 (Bad Request), maybe don't retry?
+        // But for "free" models, quota errors (429) or 500s are common.
+        if (status === 401) break; // Wrong API key probably
       }
+    }
 
+    // If we reach here, all attempts failed
+    if (lastError) {
+      const status = lastError.response?.status || 500;
+      const message = lastError.message || "Unknown error";
+      
+      console.error(`All OpenRouter attempts failed. Final status: ${status}`);
+      
       if (!res.headersSent) {
         res.status(status).json({ 
-          error: "OpenRouter API failure", 
+          error: "OpenRouter API failure after all fallbacks", 
           details: message,
           status: status 
         });
@@ -227,40 +246,54 @@ async function startServer() {
   app.post("/api/ai/image-search", async (req, res) => {
     // If using OpenRouter, we'll use a model that handles search or just standard chat
     if (process.env.OPENROUTER_API_KEY) {
-      try {
-        const { prompt } = req.body;
-        const response = await axios.post(
-          "https://openrouter.ai/api/v1/chat/completions",
-          {
-            model: "google/gemini-2.0-flash-001", // Or another preferred model
-            messages: [
-              { role: "system", content: "You are a helpful assistant. If the user asks to find an image or search for something, provide a descriptive answer and include relevant source links if possible." },
-              { role: "user", content: `Please provide information and source URLs for: ${prompt}` }
-            ]
-          },
-          {
-            headers: {
-              "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
-              "Content-Type": "application/json"
+      const { prompt } = req.body;
+      const fallbackModels = [
+        "google/gemini-2.0-flash-001",
+        "inclusionai/ring-2.6-1t:free",
+        "baidu/cobuddy:free",
+        "nvidia/nemotron-3-super-120b-a12b:free",
+        "recraft/recraft-v4.1-pro-vector"
+      ];
+
+      let lastError: any = null;
+
+      for (const model of fallbackModels) {
+        try {
+          console.log(`Attempting OpenRouter image search with model: ${model}`);
+          const response = await axios.post(
+            "https://openrouter.ai/api/v1/chat/completions",
+            {
+              model: model,
+              messages: [
+                { role: "system", content: "You are a helpful assistant. If the user asks to find an image or search for something, provide a descriptive answer and include relevant source links if possible." },
+                { role: "user", content: `Please provide information and source URLs for: ${prompt}` }
+              ]
+            },
+            {
+              headers: {
+                "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
+                "Content-Type": "application/json"
+              }
             }
-          }
-        );
-        const text = response.data.choices[0].message.content;
-        // OpenRouter doesn't easily expose the same groundingUrl structure as native Gemini SDK
-        // We can try to extract a URL from the response or just return null for groundingUrl
-        const urlMatch = text.match(/https?:\/\/[^\s)]+/);
-        res.json({ text, groundingUrl: urlMatch ? urlMatch[0] : null });
-        return;
-      } catch (error: any) {
-        const status = error.response?.status || 500;
-        const message = error.message || "Unknown error";
-        console.error('OpenRouter Image Search Error:', message);
-        if (error.response?.data) {
-          console.error('OpenRouter Image Search Details:', JSON.stringify(error.response.data));
+          );
+          const text = response.data.choices[0].message.content;
+          const urlMatch = text.match(/https?:\/\/[^\s)]+/);
+          res.json({ text, groundingUrl: urlMatch ? urlMatch[0] : null });
+          return;
+        } catch (error: any) {
+          lastError = error;
+          const status = error.response?.status || 500;
+          console.error(`OpenRouter Image Search Attempt Failed [${model}] [${status}]`);
         }
-        res.status(status).json({ error: "AI search failed", details: message });
-        return;
       }
+
+      if (lastError) {
+        const status = lastError.response?.status || 500;
+        const message = lastError.message || "Unknown error";
+        console.error('All OpenRouter image search fallbacks failed:', message);
+        res.status(status).json({ error: "AI search failed", details: message });
+      }
+      return;
     }
 
     try {
@@ -422,6 +455,12 @@ async function startServer() {
   // Cloudinary Upload Route
   app.post("/api/upload", upload.single('image'), async (req: any, res: any) => {
     try {
+      if (!cloudName || !apiKey || !apiSecret) {
+        return res.status(400).json({ 
+          error: "Cloudinary ist nicht konfiguriert. Bitte setze CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY und CLOUDINARY_API_SECRET in den Umgebungsvariablen." 
+        });
+      }
+
       if (!req.file) {
         return res.status(400).json({ error: "No file uploaded" });
       }
@@ -435,6 +474,15 @@ async function startServer() {
       res.json({ url: result.secure_url });
     } catch (error: any) {
       console.error('Upload error:', error);
+      
+      // Check if it's a Cloudinary specific 403 error
+      if (error.http_code === 403 || error.message?.includes('403')) {
+        return res.status(403).json({ 
+          error: "Cloudinary Zugriff verweigert (403). Bitte überprüfe deine API-Keys oder das Kontolimit.",
+          details: error.message
+        });
+      }
+      
       res.status(500).json({ error: error.message });
     }
   });

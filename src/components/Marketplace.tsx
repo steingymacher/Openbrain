@@ -127,6 +127,9 @@ export default function Marketplace({ userProfile, onContact }: MarketplaceProps
 
           if (!response.ok) {
             const errorData = await response.json();
+            if (response.status === 403) {
+              throw new Error("Zugriff verweigert (403). Bitte überprüfe die Cloudinary-Konfiguration.");
+            }
             throw new Error(errorData.error || 'Upload failed');
           }
 
@@ -207,6 +210,9 @@ export default function Marketplace({ userProfile, onContact }: MarketplaceProps
 
           if (!response.ok) {
             const errorData = await response.json();
+            if (response.status === 403) {
+              throw new Error("Zugriff verweigert (403). Bitte überprüfe die Cloudinary-Konfiguration.");
+            }
             throw new Error(errorData.error || 'Upload failed');
           }
 
@@ -591,7 +597,7 @@ export default function Marketplace({ userProfile, onContact }: MarketplaceProps
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className="relative w-full max-w-lg bg-white dark:bg-[#1a1a1a] rounded-[40px] p-8 shadow-2xl space-y-6 transition-colors"
+              className="relative w-full max-w-lg max-h-[90vh] sm:max-h-[85vh] bg-white dark:bg-[#1a1a1a] rounded-[40px] p-8 shadow-2xl space-y-6 overflow-y-auto overscroll-contain transition-colors"
             >
               <div className="flex items-center justify-between">
                 <h3 className="text-2xl font-serif font-bold text-[#1a1a1a] dark:text-white transition-colors">{t('edit_offer' as any) || 'Anzeige bearbeiten'}</h3>
@@ -746,7 +752,7 @@ export default function Marketplace({ userProfile, onContact }: MarketplaceProps
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className="relative w-full max-w-lg bg-white dark:bg-[#1a1a1a] rounded-[40px] p-8 shadow-2xl space-y-6 transition-colors"
+              className="relative w-full max-w-lg max-h-[90vh] sm:max-h-[85vh] bg-white dark:bg-[#1a1a1a] rounded-[40px] p-8 shadow-2xl space-y-6 overflow-y-auto overscroll-contain transition-colors"
             >
               <div className="flex items-center justify-between">
                 <h3 className="text-2xl font-serif font-bold text-[#1a1a1a] dark:text-white transition-colors">{t('create_offer')}</h3>

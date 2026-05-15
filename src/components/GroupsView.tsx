@@ -328,7 +328,7 @@ export const GroupsView: React.FC<GroupsViewProps> = ({ onClose, onAddToCart, pr
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-8">
+        <div className="flex-1 overflow-y-auto p-8 overscroll-contain">
           {loading ? (
             <div className="flex flex-col items-center justify-center h-64 gap-4 text-gray-400">
               <div className="w-8 h-8 border-4 border-[#5A5A40] border-t-transparent rounded-full animate-spin" />
