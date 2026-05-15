@@ -225,7 +225,7 @@ export default function AIChatAssistant({ userProfile, currentCart, onSaveCart }
             initial={{ opacity: 0, y: 100, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 100, scale: 0.95 }}
-            className="fixed inset-x-0 top-0 bottom-0 sm:inset-auto sm:bottom-28 sm:right-8 w-full sm:w-[420px] sm:h-[650px] bg-white dark:bg-[#1a1a1a] sm:rounded-[40px] shadow-2xl z-[10000] flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-10 duration-300 transition-colors h-[100dvh] sm:h-[650px]"
+            className="fixed inset-x-0 bottom-0 sm:bottom-28 sm:right-8 w-full sm:w-[420px] h-[100dvh] sm:h-[650px] bg-white dark:bg-[#1a1a1a] sm:rounded-[40px] shadow-2xl z-[10000] flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-10 duration-300 transition-colors"
           >
             {/* Header */}
             <div className="p-6 bg-[#5A5A40] dark:bg-black/80 backdrop-blur-md text-white flex items-center justify-between shadow-xl border-b border-white/5 relative overflow-hidden shrink-0">

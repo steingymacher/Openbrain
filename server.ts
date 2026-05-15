@@ -35,14 +35,14 @@ const firebaseApp = initializeApp(firebaseConfigModel);
 const db = getFirestore(firebaseApp, firebaseConfigModel.firestoreDatabaseId);
 
 // Cloudinary Configuration
-const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
-const apiKey = process.env.CLOUDINARY_API_KEY;
-const apiSecret = process.env.CLOUDINARY_API_SECRET;
+const cloudName = process.env.CLOUDINARY_CLOUD_NAME?.trim();
+const apiKey = process.env.CLOUDINARY_API_KEY?.trim();
+const apiSecret = process.env.CLOUDINARY_API_SECRET?.trim();
 
 console.log('Cloudinary Config Check:', {
-  cloudName: cloudName ? 'Set' : 'Missing',
-  apiKey: apiKey ? 'Set' : 'Missing',
-  apiSecret: apiSecret ? 'Set' : 'Missing'
+  cloudName: cloudName ? `Set (${cloudName.substring(0, 3)}...)` : 'Missing',
+  apiKey: apiKey ? `Set (${apiKey.substring(0, 3)}...)` : 'Missing',
+  apiSecret: apiSecret ? 'Set (exists)' : 'Missing'
 });
 
 if (cloudName && apiKey && apiSecret) {
@@ -50,6 +50,7 @@ if (cloudName && apiKey && apiSecret) {
     cloud_name: cloudName,
     api_key: apiKey,
     api_secret: apiSecret,
+    secure: true
   });
 }
 
@@ -473,17 +474,20 @@ async function startServer() {
 
       res.json({ url: result.secure_url });
     } catch (error: any) {
-      console.error('Upload error:', error);
+      console.error('Detailed Upload error:', error);
+      
+      const cloudinaryError = error.error?.message || error.message || "Unbekannter Fehler";
       
       // Check if it's a Cloudinary specific 403 error
-      if (error.http_code === 403 || error.message?.includes('403')) {
+      if (error.http_code === 403 || cloudinaryError.includes('403') || cloudinaryError.includes('unauthorized')) {
         return res.status(403).json({ 
-          error: "Cloudinary Zugriff verweigert (403). Bitte überprüfe deine API-Keys oder das Kontolimit.",
-          details: error.message
+          error: "Cloudinary Zugriff verweigert (403).",
+          details: cloudinaryError,
+          help: "Bitte überprüfe in den Cloudinary-Einstellungen, ob der API-Key und das Secret korrekt kopiert wurden (ohne Leerzeichen) und ob dein Kontolimit (Credits) nicht überschritten wurde."
         });
       }
       
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: cloudinaryError });
     }
   });
 

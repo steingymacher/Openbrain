@@ -128,7 +128,8 @@ export default function Marketplace({ userProfile, onContact }: MarketplaceProps
           if (!response.ok) {
             const errorData = await response.json();
             if (response.status === 403) {
-              throw new Error("Zugriff verweigert (403). Bitte überprüfe die Cloudinary-Konfiguration.");
+              const helpText = errorData.help ? `\n\n💡 ${errorData.help}` : "";
+              throw new Error(`${errorData.error || 'Zugriff verweigert'}\nDetails: ${errorData.details || 'Keine Details'}${helpText}`);
             }
             throw new Error(errorData.error || 'Upload failed');
           }
@@ -211,7 +212,8 @@ export default function Marketplace({ userProfile, onContact }: MarketplaceProps
           if (!response.ok) {
             const errorData = await response.json();
             if (response.status === 403) {
-              throw new Error("Zugriff verweigert (403). Bitte überprüfe die Cloudinary-Konfiguration.");
+              const helpText = errorData.help ? `\n\n💡 ${errorData.help}` : "";
+              throw new Error(`${errorData.error || 'Zugriff verweigert'}\nDetails: ${errorData.details || 'Keine Details'}${helpText}`);
             }
             throw new Error(errorData.error || 'Upload failed');
           }
@@ -292,15 +294,15 @@ export default function Marketplace({ userProfile, onContact }: MarketplaceProps
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-3xl font-serif font-bold text-[#1a1a1a] dark:text-white">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <h2 className="text-2xl sm:text-3xl font-serif font-bold text-[#1a1a1a] dark:text-white">
             {t(`type_${selectedType}` as any)}
           </h2>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
              <button
               onClick={() => setFilterMode(filterMode === 'all' ? 'my' : 'all')}
               className={cn(
-                "px-4 py-3 rounded-2xl text-xs font-bold transition-all shadow-sm flex items-center gap-2",
+                "flex-1 sm:flex-initial px-4 py-3 rounded-2xl text-[10px] sm:text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-2",
                 filterMode === 'my' ? "bg-[#5A5A40] text-white" : "bg-white dark:bg-white/5 text-gray-500 border border-gray-100 dark:border-gray-800"
               )}
             >
@@ -314,9 +316,9 @@ export default function Marketplace({ userProfile, onContact }: MarketplaceProps
                 setNewOffer(prev => ({ ...prev, type: selectedType }));
                 setShowCreateModal(true);
               }}
-              className="flex items-center gap-2 px-6 py-3 bg-[#5A5A40] text-white rounded-2xl font-bold hover:bg-[#4a4a35] transition-all shadow-lg"
+              className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 sm:px-6 py-3 bg-[#5A5A40] text-white rounded-2xl font-bold hover:bg-[#4a4a35] transition-all shadow-lg text-[10px] sm:text-base whitespace-nowrap"
             >
-              <Plus className="w-5 h-5" />
+              <Plus className="w-5 h-5 hidden sm:block" />
               {t('create_offer')}
             </button>
           </div>
@@ -453,7 +455,7 @@ export default function Marketplace({ userProfile, onContact }: MarketplaceProps
                       {t(`type_${offer.type}` as any)}
                     </span>
                     <span className="px-2 py-0.5 bg-gray-100 dark:bg-white/10 rounded text-[8px] font-black uppercase tracking-widest text-gray-500">
-                      {t(`type_${offer.category}` as any)}
+                      {t(offer.category as any)}
                     </span>
                   </div>
                   <h3 className="font-serif font-bold text-xl text-[#1a1a1a] dark:text-white group-hover:text-[#5A5A40] transition-colors line-clamp-2">
@@ -597,9 +599,9 @@ export default function Marketplace({ userProfile, onContact }: MarketplaceProps
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className="relative w-full max-w-lg max-h-[90vh] sm:max-h-[85vh] bg-white dark:bg-[#1a1a1a] rounded-[40px] p-8 shadow-2xl space-y-6 overflow-y-auto overscroll-contain transition-colors"
+              className="relative w-full max-w-lg max-h-[92vh] sm:max-h-[85vh] bg-white dark:bg-[#1a1a1a] rounded-t-[40px] sm:rounded-[40px] p-6 sm:p-8 shadow-2xl overflow-y-auto overscroll-contain transition-colors"
             >
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between mb-6">
                 <h3 className="text-2xl font-serif font-bold text-[#1a1a1a] dark:text-white transition-colors">{t('edit_offer' as any) || 'Anzeige bearbeiten'}</h3>
                 <button onClick={() => setEditingOffer(null)} className="p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-full transition-all">
                   <X className="w-6 h-6 text-gray-400 dark:text-gray-500" />
@@ -727,7 +729,7 @@ export default function Marketplace({ userProfile, onContact }: MarketplaceProps
                 <button
                   type="submit"
                   disabled={uploading}
-                  className="w-full py-5 bg-[#5A5A40] text-white rounded-2xl font-bold text-lg shadow-xl hover:bg-[#4a4a35] transition-all disabled:opacity-50"
+                  className="w-full py-5 bg-[#5A5A40] text-white rounded-2xl font-bold text-lg shadow-xl hover:bg-[#4a4a35] transition-all disabled:opacity-50 mb-10"
                 >
                   {uploading ? (t('uploading' as any) || 'Wird gesichert...') : (t('save' as any) || 'Speichern')}
                 </button>
@@ -752,9 +754,9 @@ export default function Marketplace({ userProfile, onContact }: MarketplaceProps
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className="relative w-full max-w-lg max-h-[90vh] sm:max-h-[85vh] bg-white dark:bg-[#1a1a1a] rounded-[40px] p-8 shadow-2xl space-y-6 overflow-y-auto overscroll-contain transition-colors"
+              className="relative w-full max-w-lg max-h-[92vh] sm:max-h-[85vh] bg-white dark:bg-[#1a1a1a] rounded-t-[40px] sm:rounded-[40px] p-6 sm:p-8 shadow-2xl overflow-y-auto overscroll-contain transition-colors"
             >
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between mb-6">
                 <h3 className="text-2xl font-serif font-bold text-[#1a1a1a] dark:text-white transition-colors">{t('create_offer')}</h3>
                 <button onClick={() => setShowCreateModal(false)} className="p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-full transition-all">
                   <X className="w-6 h-6 text-gray-400 dark:text-gray-500" />
@@ -885,7 +887,7 @@ export default function Marketplace({ userProfile, onContact }: MarketplaceProps
                 <button
                   type="submit"
                   disabled={uploading}
-                  className="w-full py-5 bg-[#5A5A40] text-white rounded-2xl font-bold text-lg shadow-xl hover:bg-[#4a4a35] transition-all disabled:opacity-50"
+                  className="w-full py-5 bg-[#5A5A40] text-white rounded-2xl font-bold text-lg shadow-xl hover:bg-[#4a4a35] transition-all disabled:opacity-50 mb-10"
                 >
                   {uploading ? (t('uploading' as any) || 'Wird hochgeladen...') : t('create')}
                 </button>
