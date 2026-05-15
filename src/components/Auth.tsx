@@ -77,6 +77,7 @@ export default function Auth() {
             role: (user.email === 'mihail.cozirev2017@gmail.com' || user.email === 'steingymacher@gmail.com' || user.email === '1@mail.com') ? 'admin' : 'user',
             language: 'de',
             hasCompletedTutorial: false,
+            createdAt: new Date().toISOString(),
             dietaryProfile: {
               lactoseIntolerance: false,
               glutenIntolerance: false,
@@ -122,6 +123,7 @@ export default function Auth() {
           role: (email === 'mihail.cozirev2017@gmail.com' || email === 'steingymacher@gmail.com' || email === '1@mail.com') ? 'admin' : 'user',
           language: 'de',
           hasCompletedTutorial: false,
+          createdAt: new Date().toISOString(),
           dietaryProfile: {
             lactoseIntolerance: false,
             glutenIntolerance: false,

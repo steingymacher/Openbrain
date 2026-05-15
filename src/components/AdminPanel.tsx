@@ -3,7 +3,7 @@ import { db } from '../firebase';
 import { collection, query, getDocs, doc, updateDoc, where, deleteDoc } from 'firebase/firestore';
 import { UserProfile, Product } from '../types';
 import { motion } from 'motion/react';
-import { X, Shield, ShieldAlert, Search, User as UserIcon, ShoppingBag, Plus, Edit2, Trash2, Image as ImageIcon, Cpu, Copy, Check, RefreshCw } from 'lucide-react';
+import { X, Shield, ShieldAlert, Search, User as UserIcon, ShoppingBag, Plus, Edit2, Trash2, Image as ImageIcon, Cpu, Copy, Check, RefreshCw, Flag, EyeOff, ChevronDown, ChevronRight, UserMinus } from 'lucide-react';
 import { forceUpdateDatabase, deleteAllProducts } from '../services/productService';
 
 import { useTranslation } from '../lib/LanguageContext';
@@ -26,6 +26,16 @@ export default function AdminPanel({ onClose, onEditProduct, onNewProduct }: Adm
   const [copied, setCopied] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showUpdateConfirm, setShowUpdateConfirm] = useState(false);
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
+    new: true,
+    marked: true,
+    rest: true,
+    ignored: false
+  });
+
+  const toggleSection = (section: string) => {
+    setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }));
+  };
 
   const arduinoCode = `#include <WiFi.h>
 #include <HTTPClient.h>
@@ -126,6 +136,133 @@ void loop() {
       alert('Fehler beim Aktualisieren der Rechte.');
     }
   };
+
+  const toggleUserMark = async (user: UserProfile) => {
+    try {
+      const isMarked = !user.isMarked;
+      await updateDoc(doc(db, 'users', user.uid), { isMarked });
+      setUsers(prev => prev.map(u => u.uid === user.uid ? { ...u, isMarked } : u));
+    } catch (err) {
+      console.error('Error toggling user mark:', err);
+    }
+  };
+
+  const toggleUserIgnore = async (user: UserProfile) => {
+    try {
+      const isIgnored = !user.isIgnored;
+      await updateDoc(doc(db, 'users', user.uid), { isIgnored });
+      setUsers(prev => prev.map(u => u.uid === user.uid ? { ...u, isIgnored } : u));
+    } catch (err) {
+      console.error('Error toggling user ignore:', err);
+    }
+  };
+
+  const deleteUser = async (user: UserProfile) => {
+    if (window.confirm(`Möchtest du den Account von ${user.name} wirklich unwiderruflich löschen?`)) {
+      try {
+        await deleteDoc(doc(db, 'users', user.uid));
+        setUsers(prev => prev.filter(u => u.uid !== user.uid));
+      } catch (err) {
+        console.error('Error deleting user:', err);
+        alert('Fehler beim Löschen des Benutzers.');
+      }
+    }
+  };
+
+  const categorizedUsers = {
+    ignored: users.filter(u => u.isIgnored),
+    marked: users.filter(u => u.isMarked && !u.isIgnored),
+    new: users.filter(u => {
+      if (u.isIgnored || u.isMarked) return false;
+      if (!u.createdAt) return false;
+      const created = new Date(u.createdAt).getTime();
+      const threeDaysAgo = Date.now() - (3 * 24 * 60 * 60 * 1000);
+      return created > threeDaysAgo;
+    }),
+    rest: users.filter(u => {
+      if (u.isIgnored || u.isMarked) return false;
+      if (!u.createdAt) return true; // Treat users without createdAt as old
+      const created = new Date(u.createdAt).getTime();
+      const threeDaysAgo = Date.now() - (3 * 24 * 60 * 60 * 1000);
+      return created <= threeDaysAgo;
+    })
+  };
+
+  const UserItem = ({ user }: { user: UserProfile; key?: string }) => (
+    <div key={user.uid} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-gray-50 dark:bg-[#0a0a0a] rounded-2xl border border-gray-100 dark:border-gray-800 gap-4 group">
+      <div className="flex items-center gap-4">
+        <div className="w-12 h-12 bg-white dark:bg-[#111] rounded-full flex items-center justify-center shadow-sm relative">
+          <UserIcon className="w-6 h-6 text-gray-400 dark:text-gray-500" />
+          {user.isMarked && (
+            <div className="absolute -top-1 -right-1 w-4 h-4 bg-amber-500 rounded-full flex items-center justify-center border-2 border-white dark:border-black">
+              <span className="w-1.5 h-1.5 bg-white rounded-full"></span>
+            </div>
+          )}
+        </div>
+        <div>
+          <div className="flex items-center gap-2">
+            <h4 className="font-bold text-[#1a1a1a] dark:text-white capitalize">{user.name}</h4>
+            {user.createdAt && (
+              <span className="text-[8px] text-gray-400 font-mono">
+                {new Date(user.createdAt).toLocaleDateString()}
+              </span>
+            )}
+          </div>
+          <p className="text-sm text-gray-500 dark:text-gray-400 truncate max-w-[200px]">{user.email}</p>
+          <div className="flex gap-2 items-center mt-1">
+            <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full ${
+              user.role === 'admin' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' : 
+              user.role === 'staff' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' : 
+              'bg-gray-200 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
+            }`}>
+              {user.role === 'admin' ? t('admin') : user.role === 'staff' ? t('staff') : t('user')}
+            </span>
+            {user.isIgnored && (
+              <span className="text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">
+                Ignoriert
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+      
+      <div className="flex items-center gap-2">
+        <select 
+          value={user.role || 'user'}
+          onChange={(e) => setRole(user, e.target.value)}
+          className="bg-white dark:bg-[#111] border border-gray-200 dark:border-gray-800 rounded-xl px-3 py-2 text-sm font-bold text-[#5A5A40] dark:text-[#8A8A6A] outline-none"
+        >
+          <option value="user">{t('user')}</option>
+          <option value="staff">{t('staff')}</option>
+          <option value="admin">{t('admin')}</option>
+        </select>
+        
+        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <button 
+            onClick={() => toggleUserMark(user)}
+            className={`p-2 rounded-xl transition-all ${user.isMarked ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/30' : 'bg-gray-100 dark:bg-gray-800 text-gray-400'}`}
+            title="Markieren"
+          >
+            <Flag className="w-4 h-4" />
+          </button>
+          <button 
+            onClick={() => toggleUserIgnore(user)}
+            className={`p-2 rounded-xl transition-all ${user.isIgnored ? 'bg-red-100 text-red-600 dark:bg-red-900/30' : 'bg-gray-100 dark:bg-gray-800 text-gray-400'}`}
+            title="Ignorieren"
+          >
+            <EyeOff className="w-4 h-4" />
+          </button>
+          <button 
+            onClick={() => deleteUser(user)}
+            className="p-2 bg-red-50 dark:bg-red-900/20 text-red-500 rounded-xl hover:bg-red-100 transition-all"
+            title="Löschen"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <motion.div 
@@ -314,39 +451,110 @@ void loop() {
             users.length === 0 ? (
               <div className="text-center py-12 text-gray-500 dark:text-gray-400">{t('no_users_found')}</div>
             ) : (
-              <div className="space-y-4">
-                {users.map(user => (
-                  <div key={user.uid} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-gray-50 dark:bg-[#0a0a0a] rounded-2xl border border-gray-100 dark:border-gray-800 gap-4">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-white dark:bg-[#111] rounded-full flex items-center justify-center shadow-sm">
-                        <UserIcon className="w-6 h-6 text-gray-400 dark:text-gray-500" />
-                      </div>
-                      <div>
-                        <h4 className="font-bold text-[#1a1a1a] dark:text-white">{user.name}</h4>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">{user.email}</p>
-                        <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full ${
-                          user.role === 'admin' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' : 
-                          user.role === 'staff' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' : 
-                          'bg-gray-200 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
-                        }`}>
-                          {user.role === 'admin' ? t('admin') : user.role === 'staff' ? t('staff') : t('user')}
-                        </span>
-                      </div>
+              <div className="space-y-6">
+                {/* NEW USERS */}
+                <div className="space-y-2">
+                  <button 
+                    onClick={() => toggleSection('new')}
+                    className="flex items-center justify-between w-full p-2 hover:bg-gray-50 dark:hover:bg-white/5 rounded-xl transition-all"
+                  >
+                    <div className="flex items-center gap-3">
+                      <Plus className="w-4 h-4 text-emerald-500" />
+                      <span className="font-bold text-sm tracking-tight dark:text-white">Neu (letzte 3 Tage)</span>
+                      <span className="bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400 text-[10px] px-2 py-0.5 rounded-full font-bold">
+                        {categorizedUsers.new.length}
+                      </span>
                     </div>
-                    
-                    <div className="flex items-center gap-2">
-                      <select 
-                        value={user.role || 'user'}
-                        onChange={(e) => setRole(user, e.target.value)}
-                        className="bg-white dark:bg-[#111] border border-gray-200 dark:border-gray-800 rounded-xl px-3 py-2 text-sm font-bold text-[#5A5A40] dark:text-[#8A8A6A] focus:ring-2 focus:ring-[#5A5A40] dark:focus:ring-[#8A8A6A] outline-none"
-                      >
-                        <option value="user">{t('user')}</option>
-                        <option value="staff">{t('staff')}</option>
-                        <option value="admin">{t('admin')}</option>
-                      </select>
+                    {expandedSections.new ? <ChevronDown className="w-4 h-4 text-gray-400" /> : <ChevronRight className="w-4 h-4 text-gray-400" />}
+                  </button>
+                  {expandedSections.new && (
+                    <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
+                      {categorizedUsers.new.length === 0 ? (
+                        <p className="text-xs text-center py-4 text-gray-400 italic">Keine neuen Nutzer</p>
+                      ) : (
+                        categorizedUsers.new.map(user => <UserItem key={user.uid} user={user} />)
+                      )}
                     </div>
-                  </div>
-                ))}
+                  )}
+                </div>
+
+                {/* MARKED USERS */}
+                <div className="space-y-2">
+                  <button 
+                    onClick={() => toggleSection('marked')}
+                    className="flex items-center justify-between w-full p-2 hover:bg-gray-50 dark:hover:bg-white/5 rounded-xl transition-all"
+                  >
+                    <div className="flex items-center gap-3">
+                      <Flag className="w-4 h-4 text-amber-500" />
+                      <span className="font-bold text-sm tracking-tight dark:text-white">Markiert</span>
+                      <span className="bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400 text-[10px] px-2 py-0.5 rounded-full font-bold">
+                        {categorizedUsers.marked.length}
+                      </span>
+                    </div>
+                    {expandedSections.marked ? <ChevronDown className="w-4 h-4 text-gray-400" /> : <ChevronRight className="w-4 h-4 text-gray-400" />}
+                  </button>
+                  {expandedSections.marked && (
+                    <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
+                      {categorizedUsers.marked.length === 0 ? (
+                        <p className="text-xs text-center py-4 text-gray-400 italic">Keine markierten Nutzer</p>
+                      ) : (
+                        categorizedUsers.marked.map(user => <UserItem key={user.uid} user={user} />)
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* REST */}
+                <div className="space-y-2">
+                  <button 
+                    onClick={() => toggleSection('rest')}
+                    className="flex items-center justify-between w-full p-2 hover:bg-gray-50 dark:hover:bg-white/5 rounded-xl transition-all"
+                  >
+                    <div className="flex items-center gap-3">
+                      <UserIcon className="w-4 h-4 text-blue-500" />
+                      <span className="font-bold text-sm tracking-tight dark:text-white">Rest</span>
+                      <span className="bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 text-[10px] px-2 py-0.5 rounded-full font-bold">
+                        {categorizedUsers.rest.length}
+                      </span>
+                    </div>
+                    {expandedSections.rest ? <ChevronDown className="w-4 h-4 text-gray-400" /> : <ChevronRight className="w-4 h-4 text-gray-400" />}
+                  </button>
+                  {expandedSections.rest && (
+                    <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
+                      {categorizedUsers.rest.length === 0 ? (
+                        <p className="text-xs text-center py-4 text-gray-400 italic">Keine weiteren Nutzer</p>
+                      ) : (
+                        categorizedUsers.rest.map(user => <UserItem key={user.uid} user={user} />)
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* IGNORED */}
+                <div className="space-y-2 opacity-60">
+                  <button 
+                    onClick={() => toggleSection('ignored')}
+                    className="flex items-center justify-between w-full p-2 hover:bg-gray-50 dark:hover:bg-white/5 rounded-xl transition-all"
+                  >
+                    <div className="flex items-center gap-3">
+                      <EyeOff className="w-4 h-4 text-gray-500" />
+                      <span className="font-bold text-sm tracking-tight dark:text-white">Ignoriert</span>
+                      <span className="bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 text-[10px] px-2 py-0.5 rounded-full font-bold">
+                        {categorizedUsers.ignored.length}
+                      </span>
+                    </div>
+                    {expandedSections.ignored ? <ChevronDown className="w-4 h-4 text-gray-400" /> : <ChevronRight className="w-4 h-4 text-gray-400" />}
+                  </button>
+                  {expandedSections.ignored && (
+                    <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
+                      {categorizedUsers.ignored.length === 0 ? (
+                        <p className="text-xs text-center py-4 text-gray-400 italic">Keine ignorierten Nutzer</p>
+                      ) : (
+                        categorizedUsers.ignored.map(user => <UserItem key={user.uid} user={user} />)
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
             )
           ) : activeTab === 'products' ? (

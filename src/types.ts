@@ -18,6 +18,9 @@ export interface UserProfile {
   dietaryProfile: DietaryProfile;
   totalCo2Saved?: number;
   hasCompletedTutorial?: boolean;
+  createdAt?: string;
+  isMarked?: boolean;
+  isIgnored?: boolean;
 }
 
 export interface Product {

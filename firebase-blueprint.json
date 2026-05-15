@@ -11,6 +11,9 @@
         "role": { "type": "string", "enum": ["user", "admin", "staff"] },
         "language": { "type": "string", "enum": ["de", "en"] },
         "totalCo2Saved": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "isMarked": { "type": "boolean" },
+        "isIgnored": { "type": "boolean" },
         "dietaryProfile": {
           "type": "object",
           "properties": {
