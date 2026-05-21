@@ -78,6 +78,7 @@ export default function Auth() {
             language: 'de',
             hasCompletedTutorial: false,
             createdAt: new Date().toISOString(),
+            lastLoginAt: new Date().toISOString(),
             dietaryProfile: {
               lactoseIntolerance: false,
               glutenIntolerance: false,
@@ -124,6 +125,7 @@ export default function Auth() {
           language: 'de',
           hasCompletedTutorial: false,
           createdAt: new Date().toISOString(),
+          lastLoginAt: new Date().toISOString(),
           dietaryProfile: {
             lactoseIntolerance: false,
             glutenIntolerance: false,

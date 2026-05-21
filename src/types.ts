@@ -19,6 +19,7 @@ export interface UserProfile {
   totalCo2Saved?: number;
   hasCompletedTutorial?: boolean;
   createdAt?: string;
+  lastLoginAt?: string;
   isMarked?: boolean;
   isIgnored?: boolean;
 }

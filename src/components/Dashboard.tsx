@@ -97,6 +97,18 @@ export default function Dashboard() {
   useEffect(() => {
     if (!auth.currentUser) return;
 
+    // Update last login
+    const updateLastLogin = async () => {
+      try {
+        await updateDoc(doc(db, 'users', auth.currentUser!.uid), {
+          lastLoginAt: new Date().toISOString()
+        });
+      } catch (err) {
+        console.error('Failed to update last login:', err);
+      }
+    };
+    updateLastLogin();
+
     // Check API health
     fetch('/api/health')
       .then(r => r.json())
@@ -140,6 +152,8 @@ export default function Dashboard() {
           email: auth.currentUser!.email || '',
           role: isAdminEmail ? 'admin' : 'user',
           language: (language as 'de' | 'en') || 'de',
+          createdAt: new Date().toISOString(),
+          lastLoginAt: new Date().toISOString(),
           dietaryProfile: {
             lactoseIntolerance: false,
             glutenIntolerance: false,

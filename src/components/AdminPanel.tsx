@@ -88,15 +88,19 @@ void loop() {
     setError('');
     try {
       if (activeTab === 'users') {
-        let q = query(collection(db, 'users'));
-        if (searchQuery) {
-          q = query(collection(db, 'users'), where('email', '==', searchQuery));
-        }
+        const q = query(collection(db, 'users'));
         const snapshot = await getDocs(q);
-        const userList = snapshot.docs.map(doc => ({
+        let userList = snapshot.docs.map(doc => ({
           ...doc.data(),
           uid: doc.id
         } as UserProfile));
+        if (searchQuery) {
+          const searchLower = searchQuery.toLowerCase().trim();
+          userList = userList.filter(u => 
+            u.email.toLowerCase().includes(searchLower) || 
+            (u.name && u.name.toLowerCase().includes(searchLower))
+          );
+        }
         setUsers(userList);
       } else {
         const snapshot = await getDocs(collection(db, 'products'));
@@ -144,6 +148,7 @@ void loop() {
       setUsers(prev => prev.map(u => u.uid === user.uid ? { ...u, isMarked } : u));
     } catch (err) {
       console.error('Error toggling user mark:', err);
+      alert('Fehler beim Markieren des Nutzers: ' + (err instanceof Error ? err.message : String(err)));
     }
   };
 
@@ -154,6 +159,7 @@ void loop() {
       setUsers(prev => prev.map(u => u.uid === user.uid ? { ...u, isIgnored } : u));
     } catch (err) {
       console.error('Error toggling user ignore:', err);
+      alert('Fehler beim Ignorieren des Nutzers: ' + (err instanceof Error ? err.message : String(err)));
     }
   };
 
@@ -164,7 +170,7 @@ void loop() {
         setUsers(prev => prev.filter(u => u.uid !== user.uid));
       } catch (err) {
         console.error('Error deleting user:', err);
-        alert('Fehler beim Löschen des Benutzers.');
+        alert('Fehler beim Löschen des Benutzers: ' + (err instanceof Error ? err.message : String(err)));
       }
     }
   };
@@ -191,26 +197,18 @@ void loop() {
   const UserItem = ({ user }: { user: UserProfile; key?: string }) => (
     <div key={user.uid} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-gray-50 dark:bg-[#0a0a0a] rounded-2xl border border-gray-100 dark:border-gray-800 gap-4 group">
       <div className="flex items-center gap-4">
-        <div className="w-12 h-12 bg-white dark:bg-[#111] rounded-full flex items-center justify-center shadow-sm relative">
+        <div className="w-12 h-12 bg-white dark:bg-[#111] rounded-full flex items-center justify-center shadow-sm relative shrink-0">
           <UserIcon className="w-6 h-6 text-gray-400 dark:text-gray-500" />
           {user.isMarked && (
-            <div className="absolute -top-1 -right-1 w-4 h-4 bg-amber-500 rounded-full flex items-center justify-center border-2 border-white dark:border-black">
+            <div className="absolute -top-1 -right-1 w-4 h-4 bg-amber-500 rounded-full flex items-center justify-center border-2 border-white dark:border-black animate-pulse">
               <span className="w-1.5 h-1.5 bg-white rounded-full"></span>
             </div>
           )}
         </div>
-        <div>
-          <div className="flex items-center gap-2">
-            <h4 className="font-bold text-[#1a1a1a] dark:text-white capitalize">{user.name}</h4>
-            {user.createdAt && (
-              <span className="text-[8px] text-gray-400 font-mono">
-                {new Date(user.createdAt).toLocaleDateString()}
-              </span>
-            )}
-          </div>
-          <p className="text-sm text-gray-500 dark:text-gray-400 truncate max-w-[200px]">{user.email}</p>
-          <div className="flex gap-2 items-center mt-1">
-            <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full ${
+        <div className="space-y-1">
+          <div className="flex items-center gap-2 flex-wrap">
+            <h4 className="font-bold text-[#1a1a1a] dark:text-white capitalize text-sm sm:text-base">{user.name}</h4>
+            <span className={`text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full ${
               user.role === 'admin' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' : 
               user.role === 'staff' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' : 
               'bg-gray-200 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
@@ -218,43 +216,63 @@ void loop() {
               {user.role === 'admin' ? t('admin') : user.role === 'staff' ? t('staff') : t('user')}
             </span>
             {user.isIgnored && (
-              <span className="text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">
+              <span className="text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">
                 Ignoriert
               </span>
             )}
           </div>
+          <p className="text-xs text-gray-400 dark:text-gray-400 font-mono select-all break-all">{user.email}</p>
+          
+          <div className="flex flex-col gap-0.5 text-[11px] text-gray-500 dark:text-gray-400">
+            {user.createdAt && (
+              <p>
+                Registriert: <span className="font-mono text-gray-700 dark:text-gray-300">{new Date(user.createdAt).toLocaleDateString()}</span>
+              </p>
+            )}
+            <p>
+              Letzter Login: <span className="font-mono text-gray-700 dark:text-gray-300">
+                {user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleString('de-DE', {
+                  day: '2-digit',
+                  month: '2-digit',
+                  year: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                }) : 'Unbekannt'}
+              </span>
+            </p>
+          </div>
         </div>
       </div>
       
-      <div className="flex items-center gap-2">
+      <div className="flex items-center justify-between sm:justify-end gap-3 border-t sm:border-t-0 pt-3 sm:pt-0 border-gray-100 dark:border-gray-800">
         <select 
           value={user.role || 'user'}
           onChange={(e) => setRole(user, e.target.value)}
-          className="bg-white dark:bg-[#111] border border-gray-200 dark:border-gray-800 rounded-xl px-3 py-2 text-sm font-bold text-[#5A5A40] dark:text-[#8A8A6A] outline-none"
+          className="bg-white dark:bg-[#111] border border-gray-200 dark:border-gray-800 rounded-xl px-3 py-2 text-xs font-bold text-[#5A5A40] dark:text-[#8A8A6A] outline-none"
         >
           <option value="user">{t('user')}</option>
           <option value="staff">{t('staff')}</option>
           <option value="admin">{t('admin')}</option>
         </select>
         
-        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="flex gap-1.5 opacity-100 sm:opacity-40 group-hover:opacity-100 transition-opacity">
           <button 
             onClick={() => toggleUserMark(user)}
-            className={`p-2 rounded-xl transition-all ${user.isMarked ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/30' : 'bg-gray-100 dark:bg-gray-800 text-gray-400'}`}
+            className={`p-2 rounded-xl transition-all hover:scale-105 active:scale-95 ${user.isMarked ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/30' : 'bg-gray-100 dark:bg-gray-800 text-gray-400'}`}
             title="Markieren"
           >
             <Flag className="w-4 h-4" />
           </button>
           <button 
             onClick={() => toggleUserIgnore(user)}
-            className={`p-2 rounded-xl transition-all ${user.isIgnored ? 'bg-red-100 text-red-600 dark:bg-red-900/30' : 'bg-gray-100 dark:bg-gray-800 text-gray-400'}`}
+            className={`p-2 rounded-xl transition-all hover:scale-105 active:scale-95 ${user.isIgnored ? 'bg-red-100 text-red-600 dark:bg-red-900/30' : 'bg-gray-100 dark:bg-gray-800 text-gray-400'}`}
             title="Ignorieren"
           >
             <EyeOff className="w-4 h-4" />
           </button>
           <button 
             onClick={() => deleteUser(user)}
-            className="p-2 bg-red-50 dark:bg-red-900/20 text-red-500 rounded-xl hover:bg-red-100 transition-all"
+            className="p-2 bg-red-50 dark:bg-red-900/20 text-red-500 rounded-xl hover:bg-red-100 hover:scale-105 active:scale-95 transition-all"
             title="Löschen"
           >
             <Trash2 className="w-4 h-4" />

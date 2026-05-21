@@ -12,6 +12,7 @@
         "language": { "type": "string", "enum": ["de", "en"] },
         "totalCo2Saved": { "type": "number" },
         "createdAt": { "type": "string", "format": "date-time" },
+        "lastLoginAt": { "type": "string", "format": "date-time" },
         "isMarked": { "type": "boolean" },
         "isIgnored": { "type": "boolean" },
         "dietaryProfile": {
