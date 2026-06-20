@@ -3,7 +3,7 @@ export const translations = {
     welcome: 'Willkommen',
     how_to_shop: 'Wie möchtest du heute einkaufen?',
     pickup: 'Abholung im Laden',
-    pickup_desc: 'Bestelle online und hole es ab',
+    pickup_desc: 'Selbst Scannen',
     delivery: 'Lieferung',
     delivery_desc: 'Bequem nach Hause geliefert',
     later_change: 'Du kannst dies später im Warenkorb ändern',
