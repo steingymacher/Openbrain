@@ -2,7 +2,7 @@ export const translations = {
   de: {
     welcome: 'Willkommen',
     how_to_shop: 'Wie möchtest du heute einkaufen?',
-    pickup: 'Einkaufen vor Ort',
+    pickup: 'Einkaufen',
     pickup_desc: 'Selbst Scannen',
     delivery: 'Lieferung',
     delivery_desc: 'Bequem nach Hause geliefert',
